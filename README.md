@@ -1,6 +1,4 @@
-# Getting started
+# nix-t3code
 
-Thank you for using this template! To get started, run one of the following commands:
-
-- `direnv allow`, if you're using nix-direnv
-- `nix develop` or `nix-shell`, to start a development shell
+A Nix flake for [T3 Code](https://t3.codes). The code in this repository was
+cherry-picked from [this Nixpkgs PR](https://github.com/NixOS/nixpkgs/pull/510466).
