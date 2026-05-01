@@ -30,5 +30,18 @@
         formatter = { pkgs, ... }: pkgs.nixfmt-tree;
 
         packages = { pkgs, ... }: pkgs.callPackage ./packages/scope.nix { };
+
+        devShells = utils.lib.invokeAttrs {
+          default = { outputs, ... }: outputs.devShells.updateScript;
+
+          updateScript =
+            { pkgs, ... }:
+            pkgs.mkShell {
+              name = "update-script-dev-shell";
+              packages = with pkgs; [
+                python3
+              ];
+            };
+        };
       };
 }
