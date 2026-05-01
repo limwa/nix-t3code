@@ -19,16 +19,17 @@
   writeDarwinBundle,
   xcbuild,
 }:
-
 stdenv.mkDerivation (
-  finalAttrs: let
+  finalAttrs:
+  let
     appName = "T3 Code (Alpha)";
     electron = electron_40;
 
     desktopIcon =
-      if stdenv.hostPlatform.isDarwin
-      then "assets/prod/black-macos-1024.png"
-      else "assets/prod/black-universal-1024.png";
+      if stdenv.hostPlatform.isDarwin then
+        "assets/prod/black-macos-1024.png"
+      else
+        "assets/prod/black-universal-1024.png";
 
     nodeModules = stdenvNoCC.mkDerivation {
       pname = "${finalAttrs.pname}-node_modules";
@@ -78,10 +79,11 @@ stdenv.mkDerivation (
       outputHash = "sha256-MuP+L8PwV9gKbeiJXYtUpgyIAYPmq4G1FolP7uB9J3w=";
       outputHashMode = "recursive";
     };
-  in {
+  in
+  {
     pname = "t3code";
     version = "0.0.21";
-    
+
     strictDeps = true;
     __structuredAttrs = true;
 
@@ -98,23 +100,22 @@ stdenv.mkDerivation (
                       'const host = process.env.HOST?.trim() || "127.0.0.1";'
     '';
 
-    nativeBuildInputs =
-      [
-        bun
-        installShellFiles
-        makeBinaryWrapper
-        node-gyp
-        nodejs
-        python3
-        writableTmpDirAsHomeHook
-      ]
-      ++ lib.optionals stdenv.hostPlatform.isLinux [copyDesktopItems]
-      ++ lib.optionals stdenv.hostPlatform.isDarwin [
-        cctools.libtool
-        libicns
-        writeDarwinBundle
-        xcbuild
-      ];
+    nativeBuildInputs = [
+      bun
+      installShellFiles
+      makeBinaryWrapper
+      node-gyp
+      nodejs
+      python3
+      writableTmpDirAsHomeHook
+    ]
+    ++ lib.optionals stdenv.hostPlatform.isLinux [ copyDesktopItems ]
+    ++ lib.optionals stdenv.hostPlatform.isDarwin [
+      cctools.libtool
+      libicns
+      writeDarwinBundle
+      xcbuild
+    ];
 
     configurePhase = ''
       runHook preConfigure
@@ -153,45 +154,44 @@ stdenv.mkDerivation (
     # Bun's static foreign-platform binaries.
     noAuditTmpdir = true;
 
-    installPhase =
-      ''
-        runHook preInstall
+    installPhase = ''
+      runHook preInstall
 
-        mkdir --parents "$out"/libexec/t3code/apps/desktop "$out"/libexec/t3code/apps/server
-        cp --recursive --no-preserve=mode node_modules "$out"/libexec/t3code
-        cp --recursive --no-preserve=mode apps/server/{node_modules,dist} "$out"/libexec/t3code/apps/server
-        cp --recursive --no-preserve=mode apps/desktop/{node_modules,dist-electron} "$out"/libexec/t3code/apps/desktop
+      mkdir --parents "$out"/libexec/t3code/apps/desktop "$out"/libexec/t3code/apps/server
+      cp --recursive --no-preserve=mode node_modules "$out"/libexec/t3code
+      cp --recursive --no-preserve=mode apps/server/{node_modules,dist} "$out"/libexec/t3code/apps/server
+      cp --recursive --no-preserve=mode apps/desktop/{node_modules,dist-electron} "$out"/libexec/t3code/apps/desktop
 
-        mkdir --parents "$out"/libexec/t3code/apps/desktop/prod-resources
-        install --mode=444 ${desktopIcon} \
-          "$out"/libexec/t3code/apps/desktop/prod-resources/icon.png
+      mkdir --parents "$out"/libexec/t3code/apps/desktop/prod-resources
+      install --mode=444 ${desktopIcon} \
+        "$out"/libexec/t3code/apps/desktop/prod-resources/icon.png
 
-        find "$out"/libexec/t3code -xtype l -delete
+      find "$out"/libexec/t3code -xtype l -delete
 
-        makeWrapper ${lib.getExe nodejs} "$out"/bin/t3code \
-          --add-flags "$out"/libexec/t3code/apps/server/dist/bin.mjs
+      makeWrapper ${lib.getExe nodejs} "$out"/bin/t3code \
+        --add-flags "$out"/libexec/t3code/apps/server/dist/bin.mjs
 
-        makeWrapper ${lib.getExe electron} "$out"/bin/t3code-desktop \
-          --add-flags "$out"/libexec/t3code/apps/desktop/dist-electron/main.cjs \
-          --inherit-argv0
-      ''
-      + lib.optionalString stdenv.hostPlatform.isDarwin ''
-        mkdir --parents "$out/Applications/${appName}.app/Contents/"{MacOS,Resources}
-        png2icns \
-          "$out/Applications/${appName}.app/Contents/Resources/t3code.icns" \
-          ${desktopIcon}
-        write-darwin-bundle "$out" "${appName}" t3code-desktop t3code
-      ''
-      + ''
-        mkdir --parents \
-          "$out"/share/icons/hicolor/scalable/apps
-        install --mode=444 ${desktopIcon} \
-          "$out"/share/icons/t3code.png
-        install --mode=444 assets/prod/logo.svg \
-          "$out"/share/icons/hicolor/scalable/apps/t3code.svg
+      makeWrapper ${lib.getExe electron} "$out"/bin/t3code-desktop \
+        --add-flags "$out"/libexec/t3code/apps/desktop/dist-electron/main.cjs \
+        --inherit-argv0
+    ''
+    + lib.optionalString stdenv.hostPlatform.isDarwin ''
+      mkdir --parents "$out/Applications/${appName}.app/Contents/"{MacOS,Resources}
+      png2icns \
+        "$out/Applications/${appName}.app/Contents/Resources/t3code.icns" \
+        ${desktopIcon}
+      write-darwin-bundle "$out" "${appName}" t3code-desktop t3code
+    ''
+    + ''
+      mkdir --parents \
+        "$out"/share/icons/hicolor/scalable/apps
+      install --mode=444 ${desktopIcon} \
+        "$out"/share/icons/t3code.png
+      install --mode=444 assets/prod/logo.svg \
+        "$out"/share/icons/hicolor/scalable/apps/t3code.svg
 
-        runHook postInstall
-      '';
+      runHook postInstall
+    '';
 
     postInstall = lib.optionalString (stdenv.buildPlatform.canExecute stdenv.hostPlatform) ''
       for shell in bash fish zsh; do
@@ -208,7 +208,7 @@ stdenv.mkDerivation (
         terminal = false;
         icon = "t3code";
         startupWMClass = "t3code";
-        categories = ["Development"];
+        categories = [ "Development" ];
       })
     ];
 
