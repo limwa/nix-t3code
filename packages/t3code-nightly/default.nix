@@ -216,8 +216,11 @@ stdenv.mkDerivation (
       inherit nodeModules;
       updateScript = nix-update-script {
         extraArgs = [
-          "--subpackage"
-          "nodeModules"
+          "--flake"
+          "--use-github-releases"
+          "--version=unstable"
+          "--subpackage=nodeModules"
+          "--build"
         ];
       };
     };
@@ -229,8 +232,7 @@ stdenv.mkDerivation (
       changelog = "https://github.com/pingdotgg/t3code/releases/tag/${finalAttrs.src.tag}";
       license = lib.licenses.mit;
       maintainers = with lib.maintainers; [
-        iamanaws
-        qweered
+        limwa
       ];
       mainProgram = "t3code-desktop";
       inherit (nodejs.meta) platforms;
