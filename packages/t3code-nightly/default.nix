@@ -57,6 +57,7 @@ stdenv.mkDerivation (
         runHook preBuild
 
         bun install \
+          --linker=hoisted \
           --cpu="*" \
           --ignore-scripts \
           --no-progress \
@@ -71,12 +72,11 @@ stdenv.mkDerivation (
 
         mkdir --parents $out
         cp --recursive node_modules $out
-        find apps packages -type d -name node_modules -exec cp --recursive --parents {} $out \;
 
         runHook postInstall
       '';
 
-      outputHash = "sha256-+ohBoNgQC/e9xyR7G6qWiKEGsVSUyQ4p41V7k8VLvZ0=";
+      outputHash = "sha256-5wfDAguhKauaUvhuCwJ1gHsUpaxGdjJKOBEnxDNBAeQ=";
       outputHashMode = "recursive";
     };
   in
@@ -127,7 +127,7 @@ stdenv.mkDerivation (
 
       # Compile node-pty's native addon from the vendored bun store.
       export npm_config_nodedir=${nodejs}
-      cd node_modules/.bun/node-pty@*/node_modules/node-pty
+      cd node_modules/node-pty
       node-gyp rebuild
       node scripts/post-install.js
       cd -
@@ -159,8 +159,8 @@ stdenv.mkDerivation (
 
       mkdir --parents "$out"/libexec/t3code/apps/desktop "$out"/libexec/t3code/apps/server
       cp --recursive --no-preserve=mode node_modules "$out"/libexec/t3code
-      cp --recursive --no-preserve=mode apps/server/{node_modules,dist} "$out"/libexec/t3code/apps/server
-      cp --recursive --no-preserve=mode apps/desktop/{node_modules,dist-electron} "$out"/libexec/t3code/apps/desktop
+      cp --recursive --no-preserve=mode apps/server/dist "$out"/libexec/t3code/apps/server
+      cp --recursive --no-preserve=mode apps/desktop/dist-electron "$out"/libexec/t3code/apps/desktop
 
       mkdir --parents "$out"/libexec/t3code/apps/desktop/prod-resources
       install --mode=444 ${desktopIcon} \
@@ -220,7 +220,6 @@ stdenv.mkDerivation (
           "--use-github-releases"
           "--version=unstable"
           "--subpackage=nodeModules"
-          "--build"
         ];
       };
     };
