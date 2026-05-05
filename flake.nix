@@ -1,5 +1,5 @@
 {
-  description = "A basic flake for development with Nix and NixOS";
+  description = "Auto-updating source builds of T3 Code for Linux and MacOS.";
 
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
@@ -29,7 +29,11 @@
       {
         formatter = { pkgs, ... }: pkgs.nixfmt-tree;
 
-        packages = { pkgs, ... }: pkgs.callPackage ./packages/scope.nix { };
+        packages = { pkgs, ... }: {
+          inherit (pkgs.callPackage ./packages/scope.nix { })
+            t3code
+            t3code-nightly;
+        };
 
         devShells = utils.lib.invokeAttrs {
           default = { outputs, ... }: outputs.devShells.updateScript;
