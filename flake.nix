@@ -29,11 +29,14 @@
       {
         formatter = { pkgs, ... }: pkgs.nixfmt-tree;
 
-        packages = { pkgs, ... }: {
-          inherit (pkgs.callPackage ./packages/scope.nix { })
-            t3code
-            t3code-nightly;
-        };
+        packages =
+          { pkgs, ... }:
+          {
+            inherit (pkgs.callPackage ./packages/scope.nix { })
+              t3code
+              t3code-nightly
+              ;
+          };
 
         devShells = utils.lib.invokeAttrs {
           default = { outputs, ... }: outputs.devShells.updateScript;
