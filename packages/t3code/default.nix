@@ -176,7 +176,11 @@ stdenv.mkDerivation (
       png2icns \
         "$out/Applications/${appName}.app/Contents/Resources/t3code.icns" \
         ${desktopIcon}
-      write-darwin-bundle "$out" "${appName}" t3code-desktop t3code
+
+      # writeDarwinBundle is a shebangless bash script; run it explicitly via
+      # stdenv.shell to avoid Darwin's intermittent ENOEXEC fallback issues.
+      ${stdenv.shell} ${lib.getExe writeDarwinBundle} \
+        "$out" "${appName}" t3code-desktop t3code
     ''
     + ''
       mkdir --parents \
