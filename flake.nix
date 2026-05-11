@@ -38,6 +38,11 @@
               ;
           };
 
+        checks = utils.lib.invokeAttrs {
+          t3code = { outputs, ... }: outputs.packages.t3code;
+          t3code-nightly = { outputs, ... }: outputs.packages.t3code-nightly;
+        };
+
         devShells = utils.lib.invokeAttrs {
           default = { outputs, ... }: outputs.devShells.updateScript;
 
