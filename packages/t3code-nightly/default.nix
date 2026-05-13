@@ -72,13 +72,13 @@ stdenv.mkDerivation (
         runHook postInstall
       '';
 
-      outputHash = "sha256-63Vx05VLHiZpY1K8ZS1GyoupU4i3sEPEAnWMWyMelbg=";
+      outputHash = "sha256-0wA39cSxybKPbZ1xXf+mcI4QSXJhLcNQ6x+o2xvLuq8=";
       outputHashMode = "recursive";
     };
   in
   {
     pname = "t3code-nightly";
-    version = "0.0.24-nightly.20260511.260";
+    version = "0.0.24-nightly.20260513.273";
 
     strictDeps = true;
     __structuredAttrs = true;
@@ -87,7 +87,7 @@ stdenv.mkDerivation (
       owner = "pingdotgg";
       repo = "t3code";
       tag = "v${finalAttrs.version}";
-      hash = "sha256-JoleOMVzAcJDOvRo/Whf5ehyURAHWybC7PdHtrpvR6A=";
+      hash = "sha256-le8cn3YUN+4Qpp8VqMp7PerbHIlGrqr+wPxReADxC1U=";
     };
 
     postPatch = ''
