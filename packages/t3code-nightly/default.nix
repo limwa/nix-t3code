@@ -6,6 +6,7 @@
   electron_40,
   fetchFromGitHub,
   installShellFiles,
+  jq,
   libicns,
   makeBinaryWrapper,
   makeDesktopItem,
@@ -46,7 +47,7 @@ stdenv.mkDerivation (
 
       postPatch = ''
         substituteInPlace package.json \
-          --replace-fail '"prepare": "effect-language-service patch",' '"prepare": "true",'
+          --replace-fail '"prepare": "effect-tsgo patch",' '"prepare": "true",'
       '';
 
       buildPhase = ''
@@ -54,6 +55,9 @@ stdenv.mkDerivation (
 
         bun install \
           --linker=hoisted \
+          --filter="t3" \
+          --filter="@t3tools/desktop" \
+          --filter="@t3tools/web" \
           --cpu="*" \
           --ignore-scripts \
           --no-progress \
@@ -72,13 +76,13 @@ stdenv.mkDerivation (
         runHook postInstall
       '';
 
-      outputHash = "sha256-0wA39cSxybKPbZ1xXf+mcI4QSXJhLcNQ6x+o2xvLuq8=";
+      outputHash = "sha256-SywUMtrx4lgJ8qJLx5EJOx6wX46cBGStQfOlxP7IrBE=";
       outputHashMode = "recursive";
     };
   in
   {
     pname = "t3code-nightly";
-    version = "0.0.25-nightly.20260515.295";
+    version = "0.0.25-nightly.20260530.413";
 
     strictDeps = true;
     __structuredAttrs = true;
@@ -87,13 +91,23 @@ stdenv.mkDerivation (
       owner = "pingdotgg";
       repo = "t3code";
       tag = "v${finalAttrs.version}";
-      hash = "sha256-lj871RSuJ82xulQAMcGW39x+LWPuNPoQIxEss6/UoKw=";
+      hash = "sha256-+Z4TJKMNlhkcXZOt1z6OjExWdZguXdKgAwoUTPEoLw4=";
     };
+
+    env.RELEASE_VERSION = finalAttrs.version;
 
     postPatch = ''
       substituteInPlace apps/web/vite.config.ts \
         --replace-fail 'const host = process.env.HOST?.trim() || "localhost";' \
                       'const host = process.env.HOST?.trim() || "127.0.0.1";'
+
+      for packageFile in $(find . -name 'package.json'); do
+        if jq -e '.version' "$packageFile" > /dev/null; then
+          jq --arg release_version "$RELEASE_VERSION" \
+            '.version = $release_version' "$packageFile" > "$packageFile.tmp"
+          mv "$packageFile.tmp" "$packageFile"
+        fi
+      done
     '';
 
     nativeBuildInputs = [
@@ -104,6 +118,7 @@ stdenv.mkDerivation (
       nodejs
       python3
       writableTmpDirAsHomeHook
+      jq
     ]
     ++ lib.optionals stdenv.hostPlatform.isLinux [ copyDesktopItems ]
     ++ lib.optionals stdenv.hostPlatform.isDarwin [
