@@ -33,7 +33,7 @@ stdenv.mkDerivation (
         "assets/prod/black-universal-1024.png";
 
     nodeModules = stdenvNoCC.mkDerivation {
-      pname = "${finalAttrs.pname}-node_modules";
+      name = "t3code-node_modules";
       inherit (finalAttrs) src version strictDeps;
 
       nativeBuildInputs = [
