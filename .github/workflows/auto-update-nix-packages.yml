@@ -2,7 +2,7 @@ name: Auto-update Nix packages
 
 on:
   schedule:
-    - cron: '23 */12 * * *'
+    - cron: '23 */3 * * *'
   workflow_dispatch:
 
 permissions:
