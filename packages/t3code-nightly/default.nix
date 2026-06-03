@@ -32,6 +32,23 @@ stdenv.mkDerivation (
       else
         "assets/prod/black-universal-1024.png";
 
+    selectAttr = attrSet: key: attrSet.${key} or key;
+
+    selectCpu =
+      platform:
+      selectAttr {
+        "aarch64" = "arm64";
+        "x86_64" = "x64";
+        "i686" = "ia32";
+        "powerpc64" = "ppc64";
+      } platform.parsed.cpu.name;
+
+    selectOs =
+      platform:
+      selectAttr {
+        "windows" = "win32";
+      } platform.parsed.kernel.name;
+
     nodeModules = stdenvNoCC.mkDerivation {
       name = "t3code-node_modules";
       inherit (finalAttrs) src version strictDeps;
@@ -58,11 +75,13 @@ stdenv.mkDerivation (
           --filter="t3" \
           --filter="@t3tools/desktop" \
           --filter="@t3tools/web" \
-          --cpu="*" \
           --ignore-scripts \
           --no-progress \
           --frozen-lockfile \
-          --os="*"
+          --cpu="${selectCpu stdenv.buildPlatform}" \
+          --cpu="${selectCpu stdenv.hostPlatform}" \
+          --os="${selectOs stdenv.buildPlatform}" \
+          --os="${selectOs stdenv.hostPlatform}"
 
         runHook postBuild
       '';
@@ -71,12 +90,12 @@ stdenv.mkDerivation (
         runHook preInstall
 
         mkdir --parents $out
-        cp --recursive node_modules $out
+        mv node_modules $out
 
         runHook postInstall
       '';
 
-      outputHash = "sha256-SywUMtrx4lgJ8qJLx5EJOx6wX46cBGStQfOlxP7IrBE=";
+      outputHash = "sha256-2eFHuxDftNzaLimpUZJ6LXKtOwvYLEazng9L/i8tf5g=";
       outputHashMode = "recursive";
     };
   in
