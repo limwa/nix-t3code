@@ -1,6 +1,5 @@
 {
   lib,
-  bun,
   cctools,
   copyDesktopItems,
   electron_40,
@@ -15,94 +14,31 @@
   nodejs,
   python3,
   stdenv,
-  stdenvNoCC,
   writableTmpDirAsHomeHook,
   writeDarwinBundle,
   xcbuild,
+  fetchPnpmDeps,
+  pnpm_10,
+  pnpmConfigHook,
+  cacert,
 }:
+
 stdenv.mkDerivation (
   finalAttrs:
   let
     appName = "T3 Code (Nightly Alpha)";
     electron = electron_40;
+    pnpm = pnpm_10;
 
     desktopIcon =
       if stdenv.hostPlatform.isDarwin then
         "assets/prod/black-macos-1024.png"
       else
         "assets/prod/black-universal-1024.png";
-
-    selectAttr = attrSet: key: attrSet.${key} or key;
-
-    selectCpu =
-      platform:
-      selectAttr {
-        "aarch64" = "arm64";
-        "x86_64" = "x64";
-        "i686" = "ia32";
-        "powerpc64" = "ppc64";
-      } platform.parsed.cpu.name;
-
-    selectOs =
-      platform:
-      selectAttr {
-        "windows" = "win32";
-      } platform.parsed.kernel.name;
-
-    nodeModules = stdenvNoCC.mkDerivation {
-      name = "t3code-node_modules";
-      inherit (finalAttrs) src version strictDeps;
-
-      nativeBuildInputs = [
-        bun
-        nodejs
-        writableTmpDirAsHomeHook
-        jq
-      ];
-
-      dontConfigure = true;
-      dontFixup = true;
-
-      postPatch = ''
-        jq '.scripts.prepare = "true"' package.json > package.json.tmp
-        mv package.json.tmp package.json
-      '';
-
-      buildPhase = ''
-        runHook preBuild
-
-        bun install \
-          --linker=hoisted \
-          --filter="t3" \
-          --filter="@t3tools/desktop" \
-          --filter="@t3tools/web" \
-          --ignore-scripts \
-          --no-progress \
-          --frozen-lockfile \
-          --cpu="${selectCpu stdenv.buildPlatform}" \
-          --cpu="${selectCpu stdenv.hostPlatform}" \
-          --os="${selectOs stdenv.buildPlatform}" \
-          --os="${selectOs stdenv.hostPlatform}"
-
-        runHook postBuild
-      '';
-
-      installPhase = ''
-        runHook preInstall
-
-        mkdir --parents $out
-        mv node_modules $out
-
-        runHook postInstall
-      '';
-
-      outputHash = "sha256-2eFHuxDftNzaLimpUZJ6LXKtOwvYLEazng9L/i8tf5g=";
-      outputHashMode = "recursive";
-    };
   in
   {
     pname = "t3code-nightly";
-    version = "0.0.25-nightly.20260603.451";
+    version = "0.0.25-nightly.20260604.468";
 
     strictDeps = true;
     __structuredAttrs = true;
@@ -111,10 +47,50 @@ stdenv.mkDerivation (
       owner = "pingdotgg";
       repo = "t3code";
       tag = "v${finalAttrs.version}";
-      hash = "sha256-sFdTgZqVkh340CmljllpscVkhJG11QRX1q6uVh9yIxE=";
+      hash = "sha256-JpFlvcRO7JLJAzARZbFm8KY2Em1qXC/3EHH6bs78L3A=";
+    };
+
+    nativeBuildInputs = [
+      installShellFiles
+      makeBinaryWrapper
+      node-gyp
+      nodejs
+      python3
+      writableTmpDirAsHomeHook
+      jq
+      pnpmConfigHook
+      pnpm
+      cacert
+    ]
+    ++ lib.optionals stdenv.hostPlatform.isLinux [ copyDesktopItems ]
+    ++ lib.optionals stdenv.hostPlatform.isDarwin [
+      cctools.libtool
+      libicns
+      writeDarwinBundle
+      xcbuild
+    ];
+
+    pnpmWorkspaces = [
+      "t3..."
+      "@t3tools/desktop..."
+      "@t3tools/web..."
+    ];
+
+    pnpmDeps = fetchPnpmDeps {
+      inherit pnpm;
+      inherit (finalAttrs)
+        pname
+        version
+        src
+        pnpmWorkspaces
+        ;
+
+      fetcherVersion = 3;
+      hash = "sha256-gYQHBTnJohyiOMzD31gaPiEGoIuAcDnuXku4bm3IrK8=";
     };
 
     env.RELEASE_VERSION = finalAttrs.version;
+    env.ELECTRON_SKIP_BINARY_DOWNLOAD = true;
 
     postPatch = ''
       substituteInPlace apps/web/vite.config.ts \
@@ -130,48 +106,23 @@ stdenv.mkDerivation (
       done
     '';
 
-    nativeBuildInputs = [
-      bun
-      installShellFiles
-      makeBinaryWrapper
-      node-gyp
-      nodejs
-      python3
-      writableTmpDirAsHomeHook
-      jq
-    ]
-    ++ lib.optionals stdenv.hostPlatform.isLinux [ copyDesktopItems ]
-    ++ lib.optionals stdenv.hostPlatform.isDarwin [
-      cctools.libtool
-      libicns
-      writeDarwinBundle
-      xcbuild
-    ];
-
-    configurePhase = ''
-      runHook preConfigure
-
-      cp --recursive ${nodeModules}/. .
-
-      chmod --recursive u+rwX node_modules
-      patchShebangs node_modules
-
-      # Compile node-pty's native addon from the vendored bun store.
-      export npm_config_nodedir=${nodejs}
-      cd node_modules/node-pty
-      node-gyp rebuild
-      node scripts/post-install.js
-      cd -
-
-      runHook postConfigure
+    preConfigure = ''
+      export pnpmWorkspaces="''${pnpmWorkspaces[@]}"
     '';
 
     buildPhase = ''
       runHook preBuild
 
-      for app in web server desktop; do
-        bun run --cwd apps/"$app" build
-      done
+      export npm_config_nodedir=${nodejs}
+      pnpm rebuild --pending "''${pnpmInstallFlags[@]}"
+
+      pnpm vp run \
+        --filter t3 \
+        --filter @t3tools/desktop \
+        --filter @t3tools/web \
+        build
+
+      pnpm vp cache clean
 
       runHook postBuild
     '';
@@ -190,8 +141,8 @@ stdenv.mkDerivation (
 
       mkdir --parents "$out"/libexec/t3code/apps/desktop "$out"/libexec/t3code/apps/server
       cp --recursive --no-preserve=mode node_modules "$out"/libexec/t3code
-      cp --recursive --no-preserve=mode apps/server/dist "$out"/libexec/t3code/apps/server
-      cp --recursive --no-preserve=mode apps/desktop/dist-electron "$out"/libexec/t3code/apps/desktop
+      cp --recursive --no-preserve=mode apps/server/{node_modules,dist} "$out"/libexec/t3code/apps/server
+      cp --recursive --no-preserve=mode apps/desktop/{node_modules,dist-electron} "$out"/libexec/t3code/apps/desktop
 
       mkdir --parents "$out"/libexec/t3code/apps/desktop/prod-resources
       install --mode=444 ${desktopIcon} \
@@ -248,13 +199,11 @@ stdenv.mkDerivation (
     ];
 
     passthru = {
-      inherit nodeModules;
       updateScript = nix-update-script {
         extraArgs = [
           "--flake"
           "--use-github-releases"
           "--version=unstable"
-          "--subpackage=nodeModules"
         ];
       };
     };
