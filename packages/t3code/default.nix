@@ -1,11 +1,11 @@
 {
   lib,
-  bun,
   cctools,
   copyDesktopItems,
   electron_40,
   fetchFromGitHub,
   installShellFiles,
+  jq,
   libicns,
   makeBinaryWrapper,
   makeDesktopItem,
@@ -14,90 +14,31 @@
   nodejs,
   python3,
   stdenv,
-  stdenvNoCC,
   writableTmpDirAsHomeHook,
   writeDarwinBundle,
   xcbuild,
+  fetchPnpmDeps,
+  pnpm_10,
+  pnpmConfigHook,
+  cacert,
 }:
+
 stdenv.mkDerivation (
   finalAttrs:
   let
     appName = "T3 Code (Alpha)";
     electron = electron_40;
+    pnpm = pnpm_10;
 
     desktopIcon =
       if stdenv.hostPlatform.isDarwin then
         "assets/prod/black-macos-1024.png"
       else
         "assets/prod/black-universal-1024.png";
-
-    selectAttr = attrSet: key: attrSet.${key} or key;
-
-    selectCpu =
-      platform:
-      selectAttr {
-        "aarch64" = "arm64";
-        "x86_64" = "x64";
-        "i686" = "ia32";
-        "powerpc64" = "ppc64";
-      } platform.parsed.cpu.name;
-
-    selectOs =
-      platform:
-      selectAttr {
-        "windows" = "win32";
-      } platform.parsed.kernel.name;
-
-    nodeModules = stdenvNoCC.mkDerivation {
-      name = "t3code-node_modules";
-      inherit (finalAttrs) src version strictDeps;
-
-      nativeBuildInputs = [
-        bun
-        nodejs
-        writableTmpDirAsHomeHook
-      ];
-
-      dontConfigure = true;
-      dontFixup = true;
-
-      postPatch = ''
-        substituteInPlace package.json \
-          --replace-fail '"prepare": "effect-language-service patch",' '"prepare": "true",'
-      '';
-
-      buildPhase = ''
-        runHook preBuild
-
-        bun install \
-          --linker=hoisted \
-          --ignore-scripts \
-          --no-progress \
-          --frozen-lockfile \
-          --cpu="${selectCpu stdenv.buildPlatform}" \
-          --cpu="${selectCpu stdenv.hostPlatform}" \
-          --os="${selectOs stdenv.buildPlatform}" \
-          --os="${selectOs stdenv.hostPlatform}"
-
-        runHook postBuild
-      '';
-
-      installPhase = ''
-        runHook preInstall
-
-        mkdir --parents $out
-        mv node_modules $out
-
-        runHook postInstall
-      '';
-
-      outputHash = "sha256-FXyjnEwtynawweUDVWqjt293grjVoWwLZjDa/xAA+Ys=";
-      outputHashMode = "recursive";
-    };
   in
   {
     pname = "t3code";
-    version = "0.0.24";
+    version = "0.0.25";
 
     strictDeps = true;
     __structuredAttrs = true;
@@ -106,23 +47,20 @@ stdenv.mkDerivation (
       owner = "pingdotgg";
       repo = "t3code";
       tag = "v${finalAttrs.version}";
-      hash = "sha256-7mqRuWft9h9MAEVzuwC6K1aj2UUAcjheWrwncXhpbro=";
+      hash = "sha256-R9FTqKT67POU9dED/EdPJVsu/rSEQ2C4WoNUwgkL0e8=";
     };
 
-    postPatch = ''
-      substituteInPlace apps/web/vite.config.ts \
-        --replace-fail 'const host = process.env.HOST?.trim() || "localhost";' \
-                      'const host = process.env.HOST?.trim() || "127.0.0.1";'
-    '';
-
     nativeBuildInputs = [
-      bun
       installShellFiles
       makeBinaryWrapper
       node-gyp
       nodejs
       python3
       writableTmpDirAsHomeHook
+      jq
+      pnpmConfigHook
+      pnpm
+      cacert
     ]
     ++ lib.optionals stdenv.hostPlatform.isLinux [ copyDesktopItems ]
     ++ lib.optionals stdenv.hostPlatform.isDarwin [
@@ -132,30 +70,59 @@ stdenv.mkDerivation (
       xcbuild
     ];
 
-    configurePhase = ''
-      runHook preConfigure
+    pnpmWorkspaces = [
+      "t3..."
+      "@t3tools/desktop..."
+      "@t3tools/web..."
+    ];
 
-      cp --recursive ${nodeModules}/. .
+    pnpmDeps = fetchPnpmDeps {
+      inherit pnpm;
+      inherit (finalAttrs)
+        pname
+        version
+        src
+        pnpmWorkspaces
+        ;
 
-      chmod --recursive u+rwX node_modules
-      patchShebangs node_modules
+      fetcherVersion = 3;
+      hash = "sha256-gYQHBTnJohyiOMzD31gaPiEGoIuAcDnuXku4bm3IrK8=";
+    };
 
-      # Compile node-pty's native addon from the vendored bun store.
-      export npm_config_nodedir=${nodejs}
-      cd node_modules/node-pty
-      node-gyp rebuild
-      node scripts/post-install.js
-      cd -
+    env.RELEASE_VERSION = finalAttrs.version;
+    env.ELECTRON_SKIP_BINARY_DOWNLOAD = true;
 
-      runHook postConfigure
+    postPatch = ''
+      substituteInPlace apps/web/vite.config.ts \
+        --replace-fail 'const host = process.env.HOST?.trim() || "localhost";' \
+                      'const host = process.env.HOST?.trim() || "127.0.0.1";'
+
+      for packageFile in $(find . -name 'package.json'); do
+        if jq -e '.version' "$packageFile" > /dev/null; then
+          jq --arg release_version "$RELEASE_VERSION" \
+            '.version = $release_version' "$packageFile" > "$packageFile.tmp"
+          mv "$packageFile.tmp" "$packageFile"
+        fi
+      done
+    '';
+
+    preConfigure = ''
+      export pnpmWorkspaces="''${pnpmWorkspaces[@]}"
     '';
 
     buildPhase = ''
       runHook preBuild
 
-      for app in web server desktop; do
-        bun run --cwd apps/"$app" build
-      done
+      export npm_config_nodedir=${nodejs}
+      pnpm rebuild --pending "''${pnpmInstallFlags[@]}"
+
+      pnpm vp run \
+        --filter t3 \
+        --filter @t3tools/desktop \
+        --filter @t3tools/web \
+        build
+
+      pnpm vp cache clean
 
       runHook postBuild
     '';
@@ -174,8 +141,8 @@ stdenv.mkDerivation (
 
       mkdir --parents "$out"/libexec/t3code/apps/desktop "$out"/libexec/t3code/apps/server
       cp --recursive --no-preserve=mode node_modules "$out"/libexec/t3code
-      cp --recursive --no-preserve=mode apps/server/dist "$out"/libexec/t3code/apps/server
-      cp --recursive --no-preserve=mode apps/desktop/dist-electron "$out"/libexec/t3code/apps/desktop
+      cp --recursive --no-preserve=mode apps/server/{node_modules,dist} "$out"/libexec/t3code/apps/server
+      cp --recursive --no-preserve=mode apps/desktop/{node_modules,dist-electron} "$out"/libexec/t3code/apps/desktop
 
       mkdir --parents "$out"/libexec/t3code/apps/desktop/prod-resources
       install --mode=444 ${desktopIcon} \
@@ -232,13 +199,11 @@ stdenv.mkDerivation (
     ];
 
     passthru = {
-      inherit nodeModules;
       updateScript = nix-update-script {
         extraArgs = [
           "--flake"
           "--use-github-releases"
           "--version=stable"
-          "--subpackage=nodeModules"
         ];
       };
     };
