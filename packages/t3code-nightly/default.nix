@@ -57,14 +57,15 @@ stdenv.mkDerivation (
         bun
         nodejs
         writableTmpDirAsHomeHook
+        jq
       ];
 
       dontConfigure = true;
       dontFixup = true;
 
       postPatch = ''
-        substituteInPlace package.json \
-          --replace-fail '"prepare": "effect-tsgo patch",' '"prepare": "true",'
+        jq '.scripts.prepare = "true"' package.json > package.json.tmp
+        mv package.json.tmp package.json
       '';
 
       buildPhase = ''
