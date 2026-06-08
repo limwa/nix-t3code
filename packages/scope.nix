@@ -2,6 +2,20 @@
   lib,
   newScope,
 }:
+
+let
+  defaultOptions = {
+    enableAzureDevOps = false;
+    enableBitbucket = false;
+    enableClaude = false;
+    enableCodex = false;
+    enableGitHub = false;
+    enableGit = false;
+    enableGitLab = false;
+    enableJujutsu = false;
+  };
+in
+
 lib.makeScope newScope (self: {
   lib = lib.extend (
     final: prev: {
@@ -16,6 +30,6 @@ lib.makeScope newScope (self: {
     }
   );
 
-  t3code = self.callPackage ./t3code/default.nix { };
-  t3code-nightly = self.callPackage ./t3code-nightly/default.nix { };
+  t3code = self.callPackage ./t3code/default.nix defaultOptions;
+  t3code-nightly = self.callPackage ./t3code-nightly/default.nix defaultOptions;
 })

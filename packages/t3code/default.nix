@@ -1,11 +1,11 @@
+# Last update: https://github.com/NixOS/nixpkgs/commit/fe0caddb0164fd3b9aa173b1bc480fb1a369405a
 {
-  lib,
   cctools,
   copyDesktopItems,
   electron_40,
   fetchFromGitHub,
   installShellFiles,
-  jq,
+  lib,
   libicns,
   makeBinaryWrapper,
   makeDesktopItem,
@@ -14,13 +14,30 @@
   nodejs,
   python3,
   stdenv,
-  writableTmpDirAsHomeHook,
   writeDarwinBundle,
   xcbuild,
   fetchPnpmDeps,
   pnpm_10,
   pnpmConfigHook,
+  pnpmBuildHook,
   cacert,
+  enableAzureDevOps ? false,
+  azure-cli,
+  azure-cli-extensions,
+  enableBitbucket ? false,
+  bitbucket-cli,
+  enableClaude ? false,
+  claude-code,
+  enableCodex ? true,
+  codex,
+  enableGitHub ? true,
+  gh,
+  enableGit ? true,
+  git,
+  enableGitLab ? false,
+  glab,
+  enableJujutsu ? false,
+  jujutsu,
 }:
 
 stdenv.mkDerivation (
@@ -29,17 +46,31 @@ stdenv.mkDerivation (
     appName = "T3 Code (Alpha)";
     electron = electron_40;
     pnpm = pnpm_10;
-
     desktopIcon =
       if stdenv.hostPlatform.isDarwin then
         "assets/prod/black-macos-1024.png"
       else
         "assets/prod/black-universal-1024.png";
+    runtimePackages =
+      lib.optionals enableAzureDevOps [
+        azure-cli.withExtensions
+        [ azure-cli-extensions.azure-devops ]
+      ]
+      ++ lib.optionals enableBitbucket [ bitbucket-cli ]
+      ++ lib.optionals enableClaude [ claude-code ]
+      ++ lib.optionals enableCodex [ codex ]
+      ++ lib.optionals enableGitHub [ gh ]
+      ++ lib.optionals enableGit [ git ]
+      ++ lib.optionals enableGitLab [ glab ]
+      ++ lib.optionals enableJujutsu [ jujutsu ];
+    runtimePathWrapperArgs = lib.optionalString (runtimePackages != [ ]) ''
+      \
+        --prefix PATH : ${lib.makeBinPath runtimePackages}
+    '';
   in
   {
     pname = "t3code";
     version = "0.0.25";
-
     strictDeps = true;
     __structuredAttrs = true;
 
@@ -50,15 +81,20 @@ stdenv.mkDerivation (
       hash = "sha256-R9FTqKT67POU9dED/EdPJVsu/rSEQ2C4WoNUwgkL0e8=";
     };
 
+    postPatch = ''
+      substituteInPlace apps/web/vite.config.ts \
+        --replace-fail 'const host = process.env.HOST?.trim() || "localhost";' \
+                       'const host = process.env.HOST?.trim() || "127.0.0.1";'
+    '';
+
     nativeBuildInputs = [
       installShellFiles
       makeBinaryWrapper
       node-gyp
       nodejs
       python3
-      writableTmpDirAsHomeHook
-      jq
       pnpmConfigHook
+      pnpmBuildHook
       pnpm
       cacert
     ]
@@ -71,9 +107,13 @@ stdenv.mkDerivation (
     ];
 
     pnpmWorkspaces = [
+      # `...` suffix is used to also include other workspace packages that are
+      # directly or indirectly depended on by the listed packages, such as
+      # `@t3tools/contracts` and `@t3tools/shared`.
+      "@t3tools/monorepo"
       "t3..."
       "@t3tools/desktop..."
-      "@t3tools/web..."
+      "@t3tools/scripts..."
     ];
 
     pnpmDeps = fetchPnpmDeps {
@@ -85,55 +125,44 @@ stdenv.mkDerivation (
         pnpmWorkspaces
         ;
 
-      fetcherVersion = 3;
-      hash = "sha256-gYQHBTnJohyiOMzD31gaPiEGoIuAcDnuXku4bm3IrK8=";
+      fetcherVersion = 4;
+      hash = "sha256-gctAlOtQMAbw4xWH9QyyVae6f0fk+o+EkLW+4rpmF9c=";
     };
 
-    env.RELEASE_VERSION = finalAttrs.version;
-    env.ELECTRON_SKIP_BINARY_DOWNLOAD = true;
-
-    postPatch = ''
-      substituteInPlace apps/web/vite.config.ts \
-        --replace-fail 'const host = process.env.HOST?.trim() || "localhost";' \
-                      'const host = process.env.HOST?.trim() || "127.0.0.1";'
-
-      for packageFile in $(find . -name 'package.json'); do
-        if jq -e '.version' "$packageFile" > /dev/null; then
-          jq --arg release_version "$RELEASE_VERSION" \
-            '.version = $release_version' "$packageFile" > "$packageFile.tmp"
-          mv "$packageFile.tmp" "$packageFile"
-        fi
-      done
-    '';
-
+    # This workaround turns the `pnpmWorkspaces` array into a space-separated
+    # string. This format is supported by both `pnpmConfigHook` and `pnpmBuildHook`.
+    # TODO: remove this when`pnpmConfigHook` supports `___structuredAttrs = true;`
+    # https://github.com/NixOS/nixpkgs/issues/528547
     preConfigure = ''
-      export pnpmWorkspaces="''${pnpmWorkspaces[@]}"
+      __pnpmWorkspaces="''${pnpmWorkspaces[@]}"
+      unset pnpmWorkspaces
+      declare -g pnpmWorkspaces="$__pnpmWorkspaces"
     '';
 
-    buildPhase = ''
-      runHook preBuild
+    preBuild = ''
+      node scripts/update-release-package-versions.ts ${finalAttrs.version}
 
       export npm_config_nodedir=${nodejs}
-      pnpm rebuild --pending "''${pnpmInstallFlags[@]}"
-
-      pnpm vp run \
-        --filter t3 \
-        --filter @t3tools/desktop \
-        --filter @t3tools/web \
-        build
-
-      pnpm vp cache clean
-
-      runHook postBuild
+      export ELECTRON_SKIP_BINARY_DOWNLOAD=1
+      # Exclude the `@t3tools/monorepo` workspace from the pending rebuild since
+      # `vp config` needs git
+      pnpm rebuild --pending "''${pnpmInstallFlags[@]}" --filter '!@t3tools/monorepo'
     '';
 
-    # Bun vendors many prebuilt native artifacts for non-host platforms, and
-    # some of those binaries are statically linked. Let fixup handle wrappers,
-    # shebangs, and stripping, but skip patchelf on the vendored tree.
+    pnpmBuildScript = "build:desktop";
+
+    postBuild = ''
+      pnpm vp cache clean
+    '';
+
+    # Many dependencies vendors many prebuilt native artifacts for non-host
+    # platforms, and some of those binaries are statically linked. Let fixup
+    # handle wrappers, shebangs, and stripping, but skip patchelf on the
+    # vendored tree.
     dontPatchELF = true;
     # The tmpdir audit hook also shells out to patchelf while scanning every
     # vendored ELF for leaked build paths. That produces spurious warnings on
-    # Bun's static foreign-platform binaries.
+    # some dependencies' static foreign-platform binaries.
     noAuditTmpdir = true;
 
     installPhase = ''
@@ -151,11 +180,11 @@ stdenv.mkDerivation (
       find "$out"/libexec/t3code -xtype l -delete
 
       makeWrapper ${lib.getExe nodejs} "$out"/bin/t3code \
-        --add-flags "$out"/libexec/t3code/apps/server/dist/bin.mjs
+        --add-flags "$out"/libexec/t3code/apps/server/dist/bin.mjs ${runtimePathWrapperArgs}
 
       makeWrapper ${lib.getExe electron} "$out"/bin/t3code-desktop \
         --add-flags "$out"/libexec/t3code/apps/desktop/dist-electron/main.cjs \
-        --inherit-argv0
+        --inherit-argv0 ${runtimePathWrapperArgs}
     ''
     + lib.optionalString stdenv.hostPlatform.isDarwin ''
       mkdir --parents "$out/Applications/${appName}.app/Contents/"{MacOS,Resources}
