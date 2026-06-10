@@ -70,7 +70,7 @@ stdenv.mkDerivation (
   in
   {
     pname = "t3code-nightly";
-    version = "0.0.28-nightly.20260609.516";
+    version = "0.0.28-nightly.20260610.517";
 
     strictDeps = true;
     __structuredAttrs = true;
@@ -79,7 +79,7 @@ stdenv.mkDerivation (
       owner = "pingdotgg";
       repo = "t3code";
       tag = "v${finalAttrs.version}";
-      hash = "sha256-enID/mic28apFpy+oUvKEGuuSdIMGV7B2kz8369x/5k=";
+      hash = "sha256-F/VJ6zXJrN8METg+KdRqB8CPL5hZF+805EIWm86stLs=";
     };
 
     postPatch = ''
@@ -127,7 +127,7 @@ stdenv.mkDerivation (
         ;
 
       fetcherVersion = 4;
-      hash = "sha256-vpL0kjDAtxnBpm+izcJ06KXuzX888yxmzrcEc9yKtm0=";
+      hash = "sha256-0YaXzaiHQmwu7rFu1FR08aFjDtgmlC/sTO9mhAHRfXI=";
     };
 
     # This workaround turns the `pnpmWorkspaces` array into a space-separated
