@@ -41,6 +41,18 @@
         checks = utils.lib.invokeAttrs {
           t3code = { outputs, ... }: outputs.packages.t3code;
           t3code-nightly = { outputs, ... }: outputs.packages.t3code-nightly;
+
+          formatting =
+            { outputs, pkgs, ... }:
+            pkgs.runCommand "formatting"
+              {
+                nativeBuildInputs = [ outputs.formatter ];
+              }
+              ''
+                cp -r --no-preserve=mode ${self} ./source
+                ${pkgs.lib.getExe outputs.formatter} --ci --tree-root . ./source
+                touch $out
+              '';
         };
 
         devShells = utils.lib.invokeAttrs {
