@@ -9,10 +9,13 @@ let
     enableBitbucket = false;
     enableClaude = false;
     enableCodex = false;
+    enableCursor = false;
+    enableCursorCli = false;
     enableGitHub = false;
     enableGit = false;
     enableGitLab = false;
     enableJujutsu = false;
+    enableOpencode = false;
   };
 in
 

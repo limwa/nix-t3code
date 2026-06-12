@@ -1,4 +1,7 @@
-# Last update: https://github.com/NixOS/nixpkgs/commit/fe0caddb0164fd3b9aa173b1bc480fb1a369405a
+# BEGIN nix-t3code meta
+# LAST SYNC: 2f319fa12e3a57482952d5ef177c155ad081f38b
+# DIFF: COMMIT=2f319fa12e3a57482952d5ef177c155ad081f38b; SYNC="$(gh api repos/NixOS/nixpkgs/commits/master --jq '.sha')"; echo $SYNC; delta <(curl -fsSL "https://raw.githubusercontent.com/NixOS/nixpkgs/$COMMIT/pkgs/by-name/t3/t3code/package.nix") <(curl -fsSL "https://raw.githubusercontent.com/NixOS/nixpkgs/$SYNC/pkgs/by-name/t3/t3code/package.nix")
+# END nix-t3code meta
 {
   cctools,
   copyDesktopItems,
@@ -30,6 +33,10 @@
   claude-code,
   enableCodex ? true,
   codex,
+  enableCursor ? false,
+  code-cursor,
+  enableCursorCli ? false,
+  cursor-cli,
   enableGitHub ? true,
   gh,
   enableGit ? true,
@@ -38,6 +45,8 @@
   glab,
   enableJujutsu ? false,
   jujutsu,
+  enableOpencode ? false,
+  opencode,
 }:
 
 stdenv.mkDerivation (
@@ -51,6 +60,7 @@ stdenv.mkDerivation (
         "assets/prod/black-macos-1024.png"
       else
         "assets/prod/black-universal-1024.png";
+
     runtimePackages =
       lib.optionals enableAzureDevOps [
         azure-cli.withExtensions
@@ -59,10 +69,14 @@ stdenv.mkDerivation (
       ++ lib.optionals enableBitbucket [ bitbucket-cli ]
       ++ lib.optionals enableClaude [ claude-code ]
       ++ lib.optionals enableCodex [ codex ]
+      ++ lib.optionals enableCursor [ code-cursor ]
+      ++ lib.optionals enableCursorCli [ cursor-cli ]
       ++ lib.optionals enableGitHub [ gh ]
       ++ lib.optionals enableGit [ git ]
       ++ lib.optionals enableGitLab [ glab ]
-      ++ lib.optionals enableJujutsu [ jujutsu ];
+      ++ lib.optionals enableJujutsu [ jujutsu ]
+      ++ lib.optionals enableOpencode [ opencode ];
+
     runtimePathWrapperArgs = lib.optionalString (runtimePackages != [ ]) ''
       \
         --prefix PATH : ${lib.makeBinPath runtimePackages}
