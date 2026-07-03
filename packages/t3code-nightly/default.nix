@@ -20,7 +20,7 @@
   writeDarwinBundle,
   xcbuild,
   fetchPnpmDeps,
-  pnpm_10,
+  pnpm,
   pnpmConfigHook,
   pnpmBuildHook,
   cacert,
@@ -47,6 +47,11 @@
   jujutsu,
   enableOpencode ? false,
   opencode,
+  t3code-meta,
+  t3code-source,
+  t3code-pnpm-deps,
+  t3code-pnpm-workspaces,
+  t3code-env,
 }:
 
 stdenv.mkDerivation (
@@ -54,7 +59,6 @@ stdenv.mkDerivation (
   let
     appName = "T3 Code (Nightly Alpha)";
     electron = electron_40;
-    pnpm = pnpm_10;
     desktopIcon =
       if stdenv.hostPlatform.isDarwin then
         "assets/prod/black-macos-1024.png"
@@ -83,24 +87,15 @@ stdenv.mkDerivation (
     '';
   in
   {
-    pname = "t3code-nightly";
-    version = "0.0.29-nightly.20260703.720";
+    inherit (t3code-meta)
+      pname
+      version
+      ;
 
     strictDeps = true;
     __structuredAttrs = true;
 
-    src = fetchFromGitHub {
-      owner = "pingdotgg";
-      repo = "t3code";
-      tag = "v${finalAttrs.version}";
-      hash = "sha256-HNc7QlvYfZaX0QJlau00ve/i+bKatHrSKYgl7NGcAzQ=";
-    };
-
-    postPatch = ''
-      substituteInPlace apps/web/vite.config.ts \
-        --replace-fail 'const host = process.env.HOST?.trim() || "localhost";' \
-                       'const host = process.env.HOST?.trim() || "127.0.0.1";'
-    '';
+    src = t3code-source;
 
     nativeBuildInputs = [
       installShellFiles
@@ -121,40 +116,11 @@ stdenv.mkDerivation (
       xcbuild
     ];
 
-    pnpmWorkspaces = [
-      # `...` suffix is used to also include other workspace packages that are
-      # directly or indirectly depended on by the listed packages, such as
-      # `@t3tools/contracts` and `@t3tools/shared`.
-      "@t3tools/monorepo"
-      "t3..."
-      "@t3tools/desktop..."
-      "@t3tools/scripts..."
-    ];
-
-    pnpmDeps = fetchPnpmDeps {
-      inherit pnpm;
-      inherit (finalAttrs)
-        pname
-        version
-        src
-        pnpmWorkspaces
-        ;
-
-      fetcherVersion = 4;
-      hash = "sha256-zbS8M8nqsotKDqdTlhYDcOUA+46rZbUwPLcRy5fGYJA=";
-    };
-
-    # This workaround turns the `pnpmWorkspaces` array into a space-separated
-    # string. This format is supported by both `pnpmConfigHook` and `pnpmBuildHook`.
-    # TODO: remove this when`pnpmConfigHook` supports `___structuredAttrs = true;`
-    # https://github.com/NixOS/nixpkgs/issues/528547
-    preConfigure = ''
-      __pnpmWorkspaces="''${pnpmWorkspaces[@]}"
-      unset pnpmWorkspaces
-      declare -g pnpmWorkspaces="$__pnpmWorkspaces"
-    '';
+    pnpmWorkspaces = t3code-pnpm-workspaces;
+    pnpmDeps = t3code-pnpm-deps;
 
     preBuild = ''
+      cp ${t3code-env} .env
       node scripts/update-release-package-versions.ts ${finalAttrs.version}
 
       export npm_config_nodedir=${nodejs}
@@ -195,6 +161,7 @@ stdenv.mkDerivation (
       find "$out"/libexec/t3code -xtype l -delete
 
       makeWrapper ${lib.getExe nodejs} "$out"/bin/t3code \
+        --inherit-argv0 \
         --add-flags "$out"/libexec/t3code/apps/server/dist/bin.mjs ${runtimePathWrapperArgs}
 
       makeWrapper ${lib.getExe electron} "$out"/bin/t3code-desktop \
@@ -248,6 +215,7 @@ stdenv.mkDerivation (
           "--flake"
           "--use-github-releases"
           "--version=unstable"
+          "--override-filename=packages/t3code-nightly/meta.nix"
         ];
       };
     };

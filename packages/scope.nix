@@ -34,5 +34,5 @@ lib.makeScope newScope (self: {
   );
 
   t3code = self.callPackage ./t3code/default.nix defaultOptions;
-  t3code-nightly = self.callPackage ./t3code-nightly/default.nix defaultOptions;
+  t3code-nightly = (self.callPackage ./t3code-nightly/scope.nix defaultOptions).t3code;
 })

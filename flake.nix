@@ -23,6 +23,9 @@
 
           pkgs = import nixpkgs {
             inherit system;
+            config.permittedInsecurePackages = [
+              "pnpm-10.29.2"
+            ];
           };
         };
       }
