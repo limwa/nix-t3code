@@ -18,6 +18,12 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: reclaim space (linux)
+        if: runner.os == 'Linux' && inputs.system != 'riscv64-linux'
+        uses: wimpysworld/nothing-but-nix@main
+        with:
+          hatchet-protocol: rampage
+
       - name: Install Nix
         uses: DeterminateSystems/nix-installer-action@v22
 
