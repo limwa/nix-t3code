@@ -20,7 +20,7 @@
   writeDarwinBundle,
   xcbuild,
   fetchPnpmDeps,
-  pnpm_10,
+  pnpm_11,
   pnpmConfigHook,
   pnpmBuildHook,
   cacert,
@@ -54,7 +54,7 @@ stdenv.mkDerivation (
   let
     appName = "T3 Code (Nightly Alpha)";
     electron = electron_41;
-    pnpm = pnpm_10;
+    pnpm = pnpm_11;
     desktopIcon =
       if stdenv.hostPlatform.isDarwin then
         "assets/prod/black-macos-1024.png"
