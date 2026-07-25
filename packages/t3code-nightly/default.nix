@@ -147,6 +147,7 @@ stdenv.mkDerivation (
     preBuild = ''
       node scripts/update-release-package-versions.ts ${finalAttrs.version}
 
+      export pnpm_config_verify_deps_before_run=false
       export npm_config_nodedir=${nodejs}
       export ELECTRON_SKIP_BINARY_DOWNLOAD=1
       # Exclude the `@t3tools/monorepo` workspace from the pending rebuild since
