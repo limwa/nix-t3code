@@ -30,7 +30,9 @@
   jujutsu,
   enableOpencode ? false,
   opencode,
+  enableResourceMonitor ? true,
   t3code-unwrapped ? callPackage ./unwrapped.nix { },
+  t3code-resource-monitor ? callPackage ./resource-monitor.nix { inherit t3code-unwrapped; },
 }:
 
 let
@@ -49,6 +51,23 @@ let
     ++ lib.optionals enableJujutsu [ jujutsu ]
     ++ lib.optionals enableOpencode [ opencode ];
 
+  # The resource monitor sidecar is a separate Rust binary that upstream only
+  # builds in its electron-builder pipeline, not in `build:desktop`. The server
+  # checks this variable before any bundled location, and the desktop app's
+  # server child inherits it.
+  wrapperArgs =
+    lib.optionals (runtimePackages != [ ]) [
+      "--prefix"
+      "PATH"
+      ":"
+      (lib.makeBinPath runtimePackages)
+    ]
+    ++ lib.optionals enableResourceMonitor [
+      "--set-default"
+      "T3CODE_RESOURCE_MONITOR_PATH"
+      (lib.getExe t3code-resource-monitor)
+    ];
+
 in
 symlinkJoin {
   pname = "t3code-nightly";
@@ -60,15 +79,15 @@ symlinkJoin {
 
   nativeBuildInputs = [ makeBinaryWrapper ];
 
-  postBuild = lib.optionalString (runtimePackages != [ ]) ''
+  postBuild = lib.optionalString (wrapperArgs != [ ]) ''
     for program in "$out/bin"/*; do
-      wrapProgram "$program" \
-        --prefix PATH : "${lib.makeBinPath runtimePackages}"
+      wrapProgram "$program" ${lib.escapeShellArgs wrapperArgs}
     done
   '';
 
   passthru = {
     unwrapped = t3code-unwrapped;
+    resourceMonitor = t3code-resource-monitor;
   }
   // t3code-unwrapped.passthru;
 
