@@ -84,7 +84,7 @@ stdenv.mkDerivation (
   in
   {
     pname = "t3code-nightly";
-    version = "0.0.29-nightly.20260727.914";
+    version = "0.0.32-nightly.20260801.974";
 
     strictDeps = true;
     __structuredAttrs = true;
@@ -93,13 +93,13 @@ stdenv.mkDerivation (
       owner = "pingdotgg";
       repo = "t3code";
       tag = "v${finalAttrs.version}";
-      hash = "sha256-9B/5Mn9G5c3aO8ywFDNgiro+11II2zr8EIVDc+Xwbhg=";
+      hash = "sha256-dK28A6ILvUDV4Cmm1kK912F99Hhw3+sV+xOv7Wr3fmI=";
     };
 
     postPatch = ''
       substituteInPlace apps/web/vite.config.ts \
-        --replace-fail 'const host = process.env.HOST?.trim() || "localhost";' \
-                       'const host = process.env.HOST?.trim() || "127.0.0.1";'
+        --replace-fail 'const host = explicitHost || "localhost";' \
+                       'const host = explicitHost || "127.0.0.1";'
     '';
 
     nativeBuildInputs = [
@@ -141,7 +141,7 @@ stdenv.mkDerivation (
         ;
 
       fetcherVersion = 4;
-      hash = "sha256-QNVBRvXVUOKZEdIqKY2dfjvmivMTaJJSh2cexvtdJ6k=";
+      hash = "sha256-T4Av+63TauvUxokF9hogiWGoC1laITqAvku7Jxm2plg=";
     };
 
     preBuild = ''
