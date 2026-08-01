@@ -20,7 +20,7 @@
   writeDarwinBundle,
   xcbuild,
   fetchPnpmDeps,
-  pnpm_10,
+  pnpm_11,
   pnpmConfigHook,
   pnpmBuildHook,
   cacert,
@@ -54,7 +54,7 @@ stdenv.mkDerivation (
   let
     appName = "T3 Code (Alpha)";
     electron = electron_41;
-    pnpm = pnpm_10;
+    pnpm = pnpm_11;
     desktopIcon =
       if stdenv.hostPlatform.isDarwin then
         "assets/prod/black-macos-1024.png"
@@ -84,7 +84,8 @@ stdenv.mkDerivation (
   in
   {
     pname = "t3code";
-    version = "0.0.28";
+    version = "0.0.31";
+
     strictDeps = true;
     __structuredAttrs = true;
 
@@ -92,13 +93,13 @@ stdenv.mkDerivation (
       owner = "pingdotgg";
       repo = "t3code";
       tag = "v${finalAttrs.version}";
-      hash = "sha256-InVrw9L281QSSPrHSiZuivmb+FkYEd6FkHwHIAAxmGk=";
+      hash = "sha256-KFGwgAIOqHbi3enmNAPt95+UAakm6pmClPK1nYNoOlk=";
     };
 
     postPatch = ''
       substituteInPlace apps/web/vite.config.ts \
-        --replace-fail 'const host = process.env.HOST?.trim() || "localhost";' \
-                       'const host = process.env.HOST?.trim() || "127.0.0.1";'
+        --replace-fail 'const host = explicitHost || "localhost";' \
+                       'const host = explicitHost || "127.0.0.1";'
     '';
 
     nativeBuildInputs = [
@@ -140,12 +141,13 @@ stdenv.mkDerivation (
         ;
 
       fetcherVersion = 4;
-      hash = "sha256-+JqW/iI0wdRPxyL7y6ggD/+AvwwZXs9+fSUtG/SgW9s=";
+      hash = "sha256-6tuT9MS+PIMV0PFiw1q6vtZyk3yFB5Y4yHgWohMJczs=";
     };
 
     preBuild = ''
       node scripts/update-release-package-versions.ts ${finalAttrs.version}
 
+      export pnpm_config_verify_deps_before_run=false
       export npm_config_nodedir=${nodejs}
       export ELECTRON_SKIP_BINARY_DOWNLOAD=1
       # Exclude the `@t3tools/monorepo` workspace from the pending rebuild since
@@ -176,7 +178,7 @@ stdenv.mkDerivation (
       cp --recursive --no-preserve=mode node_modules "$out"/libexec/t3code
       cp --recursive --no-preserve=mode apps/server/{node_modules,dist} "$out"/libexec/t3code/apps/server
       cp --recursive --no-preserve=mode \
-        apps/desktop/{node_modules,dist-electron} \
+        apps/desktop/{package.json,node_modules,dist-electron} \
         "$out"/libexec/t3code/apps/desktop
 
       mkdir --parents "$out"/libexec/t3code/apps/desktop/prod-resources
