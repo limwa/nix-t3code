@@ -24,6 +24,13 @@
   pnpmConfigHook,
   pnpmBuildHook,
   cacert,
+  # If you want to disable T3 Connect for this build, pass `null` to this argument.
+  connectConfig ? {
+    relayUrl = "https://relay.t3.codes";
+    clerkJwtTemplate = "t3-relay";
+    clerkCliOAuthClientId = "hzxSgY2cH10sDU2r";
+    clerkPublishableKey = "pk_live_Y2xlcmsudDMuY29kZXMk";
+  },
 }:
 
 stdenv.mkDerivation (
@@ -51,6 +58,13 @@ stdenv.mkDerivation (
       repo = "t3code";
       tag = "v${finalAttrs.version}";
       hash = "sha256-meCwrVjhlScau95ICz8GLOm++SGE3ebBUiPWOdzi4+c=";
+    };
+
+    env = lib.optionalAttrs (connectConfig != null) {
+      T3CODE_RELAY_URL = connectConfig.relayUrl;
+      T3CODE_CLERK_CLI_OAUTH_CLIENT_ID = connectConfig.clerkCliOAuthClientId;
+      T3CODE_CLERK_JWT_TEMPLATE = connectConfig.clerkJwtTemplate;
+      T3CODE_CLERK_PUBLISHABLE_KEY = connectConfig.clerkPublishableKey;
     };
 
     postPatch = ''
@@ -198,6 +212,9 @@ stdenv.mkDerivation (
         icon = "t3code";
         startupWMClass = "t3code";
         categories = [ "Development" ];
+        mimeTypes = [
+          "x-scheme-handler/t3code"
+        ];
       })
     ];
 
