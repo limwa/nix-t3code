@@ -48,7 +48,7 @@ stdenv.mkDerivation (
   in
   {
     pname = "t3code-nightly-unwrapped";
-    version = "0.0.34-nightly.20260826.1189";
+    version = "0.0.35-nightly.20260826.1193";
 
     strictDeps = true;
     __structuredAttrs = true;
@@ -57,7 +57,7 @@ stdenv.mkDerivation (
       owner = "pingdotgg";
       repo = "t3code";
       tag = "v${finalAttrs.version}";
-      hash = "sha256-RNqD/HYxAcA2nH6Zk2InXShUd1pf39WOsKr+9yFJQTQ=";
+      hash = "sha256-E63FecvS2MugrU6hh7NBYDa1ryYx1HPGslVNgkJHcuo=";
     };
 
     env = lib.optionalAttrs (connectConfig != null) {
