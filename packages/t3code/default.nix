@@ -7,6 +7,8 @@
   callPackage,
   symlinkJoin,
   makeBinaryWrapper,
+  desktop-file-utils,
+  xdg-utils,
   enableAzureDevOps ? false,
   azure-cli,
   azure-cli-extensions,
@@ -30,6 +32,8 @@
   jujutsu,
   enableOpencode ? false,
   opencode,
+  enableCloudflared ? true,
+  cloudflared,
   enableResourceMonitor ? true,
   t3code-unwrapped ? callPackage ./unwrapped.nix { },
   t3code-resource-monitor ? callPackage ./resource-monitor.nix { inherit t3code-unwrapped; },
@@ -49,7 +53,8 @@ let
     ++ lib.optionals enableGit [ git ]
     ++ lib.optionals enableGitLab [ glab ]
     ++ lib.optionals enableJujutsu [ jujutsu ]
-    ++ lib.optionals enableOpencode [ opencode ];
+    ++ lib.optionals enableOpencode [ opencode ]
+    ++ lib.optionals enableCloudflared [ cloudflared ];
 
   # The resource monitor sidecar is a separate Rust binary that upstream only
   # builds in its electron-builder pipeline, not in `build:desktop`. The server
@@ -68,6 +73,23 @@ let
       (lib.getExe t3code-resource-monitor)
     ];
 
+  desktopWrapperArgs =
+    wrapperArgs
+    ++ [
+      "--prefix"
+      "PATH"
+      ":"
+      (lib.makeBinPath [
+        xdg-utils
+        desktop-file-utils
+      ])
+    ]
+    ++ [
+      "--set-default"
+      "T3CODE_DESKTOP_EXECUTABLE"
+      "${placeholder "out"}/bin/t3code-desktop"
+    ];
+
 in
 symlinkJoin {
   pname = "t3code";
@@ -79,10 +101,15 @@ symlinkJoin {
 
   nativeBuildInputs = [ makeBinaryWrapper ];
 
-  postBuild = lib.optionalString (wrapperArgs != [ ]) ''
+  postBuild = ''
     for program in "$out/bin"/*; do
+      if [ "$program" = "$out/bin/t3code-desktop" ]; then
+        continue
+      fi
       wrapProgram "$program" ${lib.escapeShellArgs wrapperArgs}
     done
+
+    wrapProgram "$out/bin/t3code-desktop" ${lib.escapeShellArgs desktopWrapperArgs}
   '';
 
   passthru = {

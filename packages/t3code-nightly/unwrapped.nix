@@ -7,6 +7,7 @@
   copyDesktopItems,
   electron_41,
   fetchFromGitHub,
+  fetchpatch2,
   installShellFiles,
   lib,
   libicns,
@@ -59,6 +60,19 @@ stdenv.mkDerivation (
       tag = "v${finalAttrs.version}";
       hash = "sha256-xwLEX8sa8ZuUlFPJygNsbLPeQRhifUItxhgt4qZiv9s=";
     };
+
+    patches = [
+      (fetchpatch2 {
+        name = "fix-linux-distro-protocol-launchers.patch";
+        url = "https://github.com/pingdotgg/t3code/pull/8668.patch";
+        hash = "sha256-nx1F1AjWkqv2WdCjCKQ9K12fVgHw/VaEYrQ5b3Kh0jQ=";
+      })
+      (fetchpatch2 {
+        name = "refresh-linux-mime-handler-cache.patch";
+        url = "https://github.com/pingdotgg/t3code/pull/8673.patch";
+        hash = "sha256-YhxnoG7PZbQG1wepGNXHAKsGi8r0zb2KIYS2cXmfWek=";
+      })
+    ];
 
     env = lib.optionalAttrs (connectConfig != null) {
       T3CODE_RELAY_URL = connectConfig.relayUrl;
@@ -212,9 +226,6 @@ stdenv.mkDerivation (
         icon = "t3code";
         startupWMClass = "t3code";
         categories = [ "Development" ];
-        mimeTypes = [
-          "x-scheme-handler/t3code"
-        ];
       })
     ];
 
