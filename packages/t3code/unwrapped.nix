@@ -64,13 +64,13 @@ stdenv.mkDerivation (
     patches = [
       (fetchpatch2 {
         name = "fix-linux-distro-protocol-launchers.patch";
-        url = "https://github.com/pingdotgg/t3code/pull/8668.patch";
-        hash = "sha256-nx1F1AjWkqv2WdCjCKQ9K12fVgHw/VaEYrQ5b3Kh0jQ=";
+        url = "https://github.com/pingdotgg/t3code/pull/8668.patch?full_index=1";
+        hash = "sha256-9iDgGV+JluS0Xq1Dp8TJ4fowfX9PHB3H3ihYYfB7YDQ=";
       })
       (fetchpatch2 {
         name = "refresh-linux-mime-handler-cache.patch";
-        url = "https://github.com/pingdotgg/t3code/pull/8673.patch";
-        hash = "sha256-YhxnoG7PZbQG1wepGNXHAKsGi8r0zb2KIYS2cXmfWek=";
+        url = "https://github.com/pingdotgg/t3code/pull/8673.patch?full_index=1";
+        hash = "sha256-fWDYoZwt9e5yxVaiyvfJdK4ef0EbvVR3A4gMfagrm3Q=";
       })
     ];
 
