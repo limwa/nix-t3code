@@ -11,11 +11,13 @@
   installShellFiles,
   lib,
   libicns,
+  libsecret,
   makeBinaryWrapper,
   makeDesktopItem,
   nix-update-script,
   node-gyp,
   nodejs,
+  pkg-config,
   python3,
   stdenv,
   writeDarwinBundle,
@@ -98,13 +100,18 @@ stdenv.mkDerivation (
       pnpm
       cacert
     ]
-    ++ lib.optionals stdenv.hostPlatform.isLinux [ copyDesktopItems ]
+    ++ lib.optionals stdenv.hostPlatform.isLinux [
+      copyDesktopItems
+      pkg-config
+    ]
     ++ lib.optionals stdenv.hostPlatform.isDarwin [
       cctools.libtool
       libicns
       writeDarwinBundle
       xcbuild
     ];
+
+    buildInputs = lib.optionals stdenv.hostPlatform.isLinux [ libsecret ];
 
     pnpmWorkspaces = [
       # `...` suffix is used to also include other workspace packages that are
