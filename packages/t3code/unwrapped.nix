@@ -1,11 +1,11 @@
 # BEGIN nix-t3code meta
-# LAST SYNC: 63819399b93f59a44463d14e773d11a4748ac6af
-# DIFF: COMMIT=63819399b93f59a44463d14e773d11a4748ac6af; SYNC="$(gh api repos/NixOS/nixpkgs/commits/master --jq '.sha')"; echo $SYNC; delta <(curl -fsSL "https://raw.githubusercontent.com/NixOS/nixpkgs/$COMMIT/pkgs/by-name/t3/t3code/unwrapped.nix") <(curl -fsSL "https://raw.githubusercontent.com/NixOS/nixpkgs/$SYNC/pkgs/by-name/t3/t3code/unwrapped.nix")
+# LAST SYNC: 1be7652e6e96aff0192d84259f96927df2259675
+# DIFF: COMMIT=1be7652e6e96aff0192d84259f96927df2259675; SYNC="$(gh api repos/NixOS/nixpkgs/commits/master --jq '.sha')"; echo $SYNC; delta <(curl -fsSL "https://raw.githubusercontent.com/NixOS/nixpkgs/$COMMIT/pkgs/by-name/t3/t3code/unwrapped.nix") <(curl -fsSL "https://raw.githubusercontent.com/NixOS/nixpkgs/$SYNC/pkgs/by-name/t3/t3code/unwrapped.nix")
 # END nix-t3code meta
 {
   cctools,
   copyDesktopItems,
-  electron_41,
+  electron_44,
   fetchFromGitHub,
   installShellFiles,
   lib,
@@ -18,6 +18,7 @@
   nodejs,
   pkg-config,
   python3,
+  spdx-license-list-data,
   stdenv,
   writeDarwinBundle,
   xcbuild,
@@ -32,7 +33,7 @@ stdenv.mkDerivation (
   finalAttrs:
   let
     appName = "T3 Code (Alpha)";
-    electron = electron_41;
+    electron = electron_44;
     pnpm = pnpm_11;
     desktopIcon =
       if stdenv.hostPlatform.isDarwin then
@@ -43,7 +44,7 @@ stdenv.mkDerivation (
   in
   {
     pname = "t3code-unwrapped";
-    version = "0.0.39";
+    version = "0.0.42";
 
     strictDeps = true;
     __structuredAttrs = true;
@@ -52,13 +53,17 @@ stdenv.mkDerivation (
       owner = "pingdotgg";
       repo = "t3code";
       tag = "v${finalAttrs.version}";
-      hash = "sha256-nlVv29HKEXXU8+1bkJFWZllDdCV0teiaix+lqmOwoA0=";
+      hash = "sha256-YV86WqqpGQwjeovXB0IoE3f/o4IUC5DDVdBEdT4xzjc=";
     };
 
     postPatch = ''
       substituteInPlace apps/web/vite.config.ts \
         --replace-fail 'const host = explicitHost || "localhost";' \
                        'const host = explicitHost || "127.0.0.1";'
+
+      mkdir -p .generated/third-party-licenses/spdx/v3.28.0
+      cp ${spdx-license-list-data.json}/json/details/*.json \
+        .generated/third-party-licenses/spdx/v3.28.0
     '';
 
     nativeBuildInputs = [
@@ -105,7 +110,7 @@ stdenv.mkDerivation (
         ;
 
       fetcherVersion = 4;
-      hash = "sha256-hYyiJ6FyNuG4594xObhMFIFBp5FZqK7o6sNnmryR/Jc=";
+      hash = "sha256-gEY2em9pNTC1EuVX0V3L/Wu1apZ+BKBXxALEcPQ/pwA=";
     };
 
     preBuild = ''
@@ -151,6 +156,13 @@ stdenv.mkDerivation (
       mkdir --parents "$out"/libexec/t3code/apps/desktop/prod-resources
       install --mode=444 ${desktopIcon} \
         "$out"/libexec/t3code/apps/desktop/prod-resources/icon.png
+    ''
+    + lib.optionalString stdenv.hostPlatform.isLinux ''
+      install -Dm755 \
+        native/browser-secret/build/${stdenv.hostPlatform.node.arch}/t3-browser-secret \
+        "$out"/libexec/t3code/apps/desktop/prod-resources/browser-secret/t3-browser-secret
+    ''
+    + ''
 
       find "$out"/libexec/t3code -xtype l -delete
 
@@ -180,9 +192,9 @@ stdenv.mkDerivation (
     ''
     + ''
       mkdir --parents \
-        "$out"/share/icons/hicolor/scalable/apps
+        "$out"/share/icons/hicolor/{1024x1024,scalable}/apps
       install --mode=444 ${desktopIcon} \
-        "$out"/share/icons/t3code.png
+        "$out"/share/icons/hicolor/1024x1024/apps/t3code.png
       install --mode=444 assets/prod/logo.svg \
         "$out"/share/icons/hicolor/scalable/apps/t3code.svg
 

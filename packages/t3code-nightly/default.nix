@@ -1,6 +1,6 @@
 # BEGIN nix-t3code meta
-# LAST SYNC: 63819399b93f59a44463d14e773d11a4748ac6af
-# DIFF: COMMIT=63819399b93f59a44463d14e773d11a4748ac6af; SYNC="$(gh api repos/NixOS/nixpkgs/commits/master --jq '.sha')"; echo $SYNC; delta <(curl -fsSL "https://raw.githubusercontent.com/NixOS/nixpkgs/$COMMIT/pkgs/by-name/t3/t3code/package.nix") <(curl -fsSL "https://raw.githubusercontent.com/NixOS/nixpkgs/$SYNC/pkgs/by-name/t3/t3code/package.nix")
+# LAST SYNC: 1be7652e6e96aff0192d84259f96927df2259675
+# DIFF: COMMIT=1be7652e6e96aff0192d84259f96927df2259675; SYNC="$(gh api repos/NixOS/nixpkgs/commits/master --jq '.sha')"; echo $SYNC; delta <(curl -fsSL "https://raw.githubusercontent.com/NixOS/nixpkgs/$COMMIT/pkgs/by-name/t3/t3code/package.nix") <(curl -fsSL "https://raw.githubusercontent.com/NixOS/nixpkgs/$SYNC/pkgs/by-name/t3/t3code/package.nix")
 # END nix-t3code meta
 {
   lib,
@@ -82,7 +82,7 @@ symlinkJoin {
 
   nativeBuildInputs = [ makeBinaryWrapper ];
 
-  postBuild = ''
+  postBuild = lib.optionalString (wrapperArgs != [ ]) ''
     for program in "$out/bin"/*; do
       wrapProgram "$program" ${lib.escapeShellArgs wrapperArgs}
     done
