@@ -215,6 +215,7 @@ stdenv.mkDerivation (
           "--flake"
           "--use-github-releases"
           "--version=unstable"
+          "--version-regex=v(\\d+\\.\\d+\\.\\d+-nightly\\.\\d+\\.\\d+)"
         ];
       };
     };
