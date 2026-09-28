@@ -7,7 +7,6 @@
   copyDesktopItems,
   electron_41,
   fetchFromGitHub,
-  fetchpatch2,
   installShellFiles,
   lib,
   libicns,
@@ -27,13 +26,6 @@
   pnpmConfigHook,
   pnpmBuildHook,
   cacert,
-  # If you want to disable T3 Connect for this build, pass `null` to this argument.
-  connectConfig ? {
-    relayUrl = "https://relay.t3.codes";
-    clerkJwtTemplate = "t3-relay";
-    clerkCliOAuthClientId = "hzxSgY2cH10sDU2r";
-    clerkPublishableKey = "pk_live_Y2xlcmsudDMuY29kZXMk";
-  },
 }:
 
 stdenv.mkDerivation (
@@ -61,26 +53,6 @@ stdenv.mkDerivation (
       repo = "t3code";
       tag = "v${finalAttrs.version}";
       hash = "sha256-YbzOHsp/Y3kDgR5V8uoTMgczNjOFPiR2juTYVcrG21M=";
-    };
-
-    patches = [
-      (fetchpatch2 {
-        name = "fix-linux-distro-protocol-launchers.patch";
-        url = "https://github.com/pingdotgg/t3code/pull/8668.patch?full_index=1";
-        hash = "sha256-9iDgGV+JluS0Xq1Dp8TJ4fowfX9PHB3H3ihYYfB7YDQ=";
-      })
-      (fetchpatch2 {
-        name = "refresh-linux-mime-handler-cache.patch";
-        url = "https://github.com/pingdotgg/t3code/pull/8673.patch?full_index=1";
-        hash = "sha256-fWDYoZwt9e5yxVaiyvfJdK4ef0EbvVR3A4gMfagrm3Q=";
-      })
-    ];
-
-    env = lib.optionalAttrs (connectConfig != null) {
-      T3CODE_RELAY_URL = connectConfig.relayUrl;
-      T3CODE_CLERK_CLI_OAUTH_CLIENT_ID = connectConfig.clerkCliOAuthClientId;
-      T3CODE_CLERK_JWT_TEMPLATE = connectConfig.clerkJwtTemplate;
-      T3CODE_CLERK_PUBLISHABLE_KEY = connectConfig.clerkPublishableKey;
     };
 
     postPatch = ''

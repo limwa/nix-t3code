@@ -7,8 +7,6 @@
   callPackage,
   symlinkJoin,
   makeBinaryWrapper,
-  desktop-file-utils,
-  xdg-utils,
   enableAzureDevOps ? false,
   azure-cli,
   azure-cli-extensions,
@@ -73,23 +71,6 @@ let
       (lib.getExe t3code-resource-monitor)
     ];
 
-  desktopWrapperArgs =
-    wrapperArgs
-    ++ [
-      "--prefix"
-      "PATH"
-      ":"
-      (lib.makeBinPath [
-        xdg-utils
-        desktop-file-utils
-      ])
-    ]
-    ++ [
-      "--set-default"
-      "T3CODE_DESKTOP_EXECUTABLE"
-      "${placeholder "out"}/bin/t3code-desktop"
-    ];
-
 in
 symlinkJoin {
   pname = "t3code";
@@ -103,13 +84,8 @@ symlinkJoin {
 
   postBuild = ''
     for program in "$out/bin"/*; do
-      if [ "$program" = "$out/bin/t3code-desktop" ]; then
-        continue
-      fi
       wrapProgram "$program" ${lib.escapeShellArgs wrapperArgs}
     done
-
-    wrapProgram "$out/bin/t3code-desktop" ${lib.escapeShellArgs desktopWrapperArgs}
   '';
 
   passthru = {
