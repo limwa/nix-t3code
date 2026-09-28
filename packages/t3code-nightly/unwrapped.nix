@@ -129,6 +129,7 @@ stdenv.mkDerivation (
       node scripts/update-release-package-versions.ts ${finalAttrs.version}
 
       export npm_config_nodedir=${nodejs}
+      export npm_config_build_from_source=true
       export ELECTRON_SKIP_BINARY_DOWNLOAD=1
       # Exclude the `@t3tools/monorepo` workspace from the pending rebuild since
       # `vp config` needs git
