@@ -100,6 +100,13 @@ stdenv.mkDerivation (
       "@t3tools/scripts..."
     ];
 
+    prePnpmInstall = ''
+      pnpm config set fetchRetries 8
+      pnpm config set networkConcurrency 3
+      pnpm config set fetchWarnTimeoutMs 600000
+      pnpm config set fetchMinSpeedKiBps 0
+    '';
+
     pnpmDeps = fetchPnpmDeps {
       inherit pnpm;
       inherit (finalAttrs)
@@ -107,6 +114,7 @@ stdenv.mkDerivation (
         version
         src
         pnpmWorkspaces
+        prePnpmInstall
         ;
 
       fetcherVersion = 4;
