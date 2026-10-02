@@ -99,7 +99,7 @@ stdenv.mkDerivation (
       "@t3tools/desktop..."
       "@t3tools/scripts..."
     ];
-    
+
     prePnpmInstall = ''
       pnpm config set fetchRetries 8
       pnpm config set networkConcurrency 3
