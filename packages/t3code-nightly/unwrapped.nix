@@ -44,7 +44,7 @@ stdenv.mkDerivation (
   in
   {
     pname = "t3code-nightly-unwrapped";
-    version = "0.0.46-nightly.20261004.2652";
+    version = "0.0.46-nightly.20261004.2657";
 
     strictDeps = true;
     __structuredAttrs = true;
@@ -53,7 +53,7 @@ stdenv.mkDerivation (
       owner = "pingdotgg";
       repo = "t3code";
       tag = "v${finalAttrs.version}";
-      hash = "sha256-SI6rf3TA2/LOPQ4dzRV+3J+ShwSjrvK78GBkb8RpIJ8=";
+      hash = "sha256-fCeT0EN2HrEnkZach0CcE9AY4yZlRUa13ccfRbdHRF4=";
     };
 
     postPatch = ''
