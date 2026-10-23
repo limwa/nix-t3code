@@ -20,6 +20,7 @@
   python3,
   spdx-license-list-data,
   stdenv,
+  testers,
   writeDarwinBundle,
   xcbuild,
   fetchPnpmDeps,
@@ -156,11 +157,19 @@ stdenv.mkDerivation (
       runHook preInstall
 
       mkdir --parents "$out"/libexec/t3code/apps/desktop "$out"/libexec/t3code/apps/server
-      cp --recursive --no-preserve=mode node_modules "$out"/libexec/t3code
-      cp --recursive --no-preserve=mode apps/server/{node_modules,dist} "$out"/libexec/t3code/apps/server
+      # The bundles inline everything except a few packages that have to be
+      # loaded from disk, so only ship those and their dependencies.
+      node ${./install-runtime-deps.mjs} . "$out"/libexec/t3code
+      chmod --recursive u+w "$out"/libexec/t3code/node_modules
+      cp --recursive --no-preserve=mode apps/server/dist "$out"/libexec/t3code/apps/server
       cp --recursive --no-preserve=mode \
-        apps/desktop/{package.json,node_modules,dist-electron} \
+        apps/desktop/{package.json,dist-electron} \
         "$out"/libexec/t3code/apps/desktop
+
+      # Same exclusions as upstream's release build: nothing reads source maps
+      # or type declarations at runtime, and ConPTY is only used on Windows.
+      find "$out"/libexec/t3code \( -name '*.map' -o -name '*.d.cts' \) -delete
+      rm --recursive --force "$out"/libexec/t3code/node_modules/.pnpm/node-pty@*/node_modules/node-pty/third_party/conpty
 
       mkdir --parents "$out"/libexec/t3code/apps/desktop/prod-resources
       install --mode=444 ${desktopIcon} \
@@ -238,6 +247,10 @@ stdenv.mkDerivation (
           "--version=stable"
           "--version-regex=v(\\d+\\.\\d+\\.\\d+)"
         ];
+      };
+
+      tests = lib.optionalAttrs stdenv.hostPlatform.isLinux {
+        desktop = testers.runNixOSTest (import ./tests/desktop.nix { t3code = finalAttrs.finalPackage; });
       };
     };
 
