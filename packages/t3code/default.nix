@@ -4,6 +4,7 @@
 # END nix-t3code meta
 {
   lib,
+  stdenv,
   callPackage,
   symlinkJoin,
   makeBinaryWrapper,
@@ -69,6 +70,14 @@ let
       "--set-default"
       "T3CODE_RESOURCE_MONITOR_PATH"
       (lib.getExe t3code-resource-monitor)
+    ]
+    # t3code:// links should go through this wrapper and its PATH additions
+    # rather than the unwrapped launcher. This takes priority over the
+    # unwrapped wrapper's default since it runs first.
+    ++ lib.optionals stdenv.hostPlatform.isLinux [
+      "--set"
+      "T3CODE_DESKTOP_LAUNCHER_PATH"
+      "${placeholder "out"}/bin/t3code-desktop"
     ];
 
 in

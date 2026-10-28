@@ -57,6 +57,8 @@ stdenv.mkDerivation (
       hash = "sha256-xxmwaHPkXzR0CAtknCc6raAzcnPtmw8wxF3YO3WcbE4=";
     };
 
+    patches = [ ./patches/desktop-resources-path.patch ];
+
     postPatch = ''
       substituteInPlace apps/web/vite.config.ts \
         --replace-fail 'const host = explicitHost || "localhost";' \
@@ -156,15 +158,34 @@ stdenv.mkDerivation (
     installPhase = ''
       runHook preInstall
 
+      desktopWrapperArgs=()
+
       mkdir --parents "$out"/libexec/t3code/apps/desktop "$out"/libexec/t3code/apps/server
       # The bundles inline everything except a few packages that have to be
       # loaded from disk, so only ship those and their dependencies.
-      node ${./install-runtime-deps.mjs} . "$out"/libexec/t3code
+      node ${./scripts/install-runtime-deps.mjs} . "$out"/libexec/t3code
       chmod --recursive u+w "$out"/libexec/t3code/node_modules
       cp --recursive --no-preserve=mode apps/server/dist "$out"/libexec/t3code/apps/server
       cp --recursive --no-preserve=mode \
         apps/desktop/{package.json,dist-electron} \
         "$out"/libexec/t3code/apps/desktop
+
+      # Electron runs on the repository root, which is laid out like upstream's
+      # app.asar, so give it the runtime fields of the package.json that
+      # upstream stages there (scripts/build-desktop-artifact.ts).
+      node -e '
+        const fs = require("node:fs");
+        const [destination, version] = process.argv.slice(1);
+        const { productName } = JSON.parse(fs.readFileSync("apps/desktop/package.json", "utf8"));
+        const manifest = {
+          name: "t3code",
+          version,
+          productName,
+          private: true,
+          main: "apps/desktop/dist-electron/boot.cjs",
+        };
+        fs.writeFileSync(destination, JSON.stringify(manifest, null, 2) + "\n");
+      ' "$out"/libexec/t3code/package.json ${finalAttrs.version}
 
       # Same exclusions as upstream's release build: nothing reads source maps
       # or type declarations at runtime, and ConPTY is only used on Windows.
@@ -178,7 +199,16 @@ stdenv.mkDerivation (
     + lib.optionalString stdenv.hostPlatform.isLinux ''
       install -Dm755 \
         native/browser-secret/build/${stdenv.hostPlatform.node.arch}/t3-browser-secret \
-        "$out"/libexec/t3code/apps/desktop/prod-resources/browser-secret/t3-browser-secret
+        "$out"/libexec/t3code-resources/browser-secret/t3-browser-secret
+
+      # Run in Electron's packaged mode. The shared Electron's resources
+      # directory is its own, so point the app at ours instead.
+      desktopWrapperArgs+=(
+        --set ELECTRON_FORCE_IS_PACKAGED true
+        --set T3CODE_DESKTOP_RESOURCES_PATH "$out"/libexec/t3code-resources
+        --set T3CODE_DISABLE_AUTO_UPDATE 1
+        --set-default T3CODE_DESKTOP_LAUNCHER_PATH "$out"/bin/t3code-desktop
+      )
     ''
     + ''
 
@@ -188,8 +218,9 @@ stdenv.mkDerivation (
         --add-flags "$out"/libexec/t3code/apps/server/dist/bin.mjs
 
       makeWrapper ${lib.getExe electron} "$out"/bin/t3code-desktop \
-        --add-flags "$out"/libexec/t3code/apps/desktop \
-        --inherit-argv0
+        --add-flags "$out"/libexec/t3code \
+        --inherit-argv0 \
+        "''${desktopWrapperArgs[@]}"
     ''
     + lib.optionalString stdenv.hostPlatform.isDarwin ''
       # node-pty tries to chmod this helper at runtime, but the Nix store is
