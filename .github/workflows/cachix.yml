@@ -46,10 +46,22 @@ jobs:
         with:
           name: ${{ vars.CACHIX_CACHE_NAME }}
           authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
+          # Don't push everything that gets built (e.g. the pnpm deps); only
+          # the final packages are pushed, explicitly, below.
+          skipPush: true
 
       - name: Build t3code and t3code-nightly
         shell: bash
         run: |
-          nix build --print-build-logs --no-link \
+          nix build --print-build-logs --no-link --print-out-paths \
             .#t3code \
-            .#t3code-nightly
+            .#t3code-nightly > out-paths.txt
+
+      - name: Push t3code and t3code-nightly to Cachix
+        shell: bash
+        env:
+          CACHIX_CACHE_NAME: ${{ vars.CACHIX_CACHE_NAME }}
+        run: |
+          # Pushes the runtime closure of the built packages, not their
+          # build-time dependencies.
+          cachix push "$CACHIX_CACHE_NAME" < out-paths.txt
