@@ -1,0 +1,55 @@
+name: Push to Cachix
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+# If several commits are pushed in quick succession, only the latest one is
+# built and pushed to Cachix; runs for older commits are cancelled.
+concurrency:
+  group: cachix-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build and push (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          - ubuntu-24.04-arm
+          - macos-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: reclaim space (linux)
+        if: runner.os == 'Linux' && runner.arch == 'X64'
+        uses: wimpysworld/nothing-but-nix@main
+        with:
+          hatchet-protocol: rampage
+
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@v22
+
+      - name: Set up Cachix
+        uses: cachix/cachix-action@v16
+        with:
+          name: ${{ vars.CACHIX_CACHE_NAME }}
+          authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
+
+      - name: Build t3code and t3code-nightly
+        shell: bash
+        run: |
+          nix build --print-build-logs --no-link \
+            .#t3code \
+            .#t3code-nightly
