@@ -1,6 +1,11 @@
 {
   description = "Auto-updating source builds of T3 Code for Linux and MacOS.";
 
+  nixConfig = {
+    extra-substituters = [ "https://limwa.cachix.org" ];
+    extra-trusted-public-keys = [ "limwa.cachix.org-1:W5n83EB/Sx7gd4XMc7hpSK6uDYzOd6ac8aMQ+Ye4i00=" ];
+  };
+
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
     systems.url = "github:nix-systems/default/future-26.11";
