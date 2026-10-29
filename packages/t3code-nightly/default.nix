@@ -33,6 +33,8 @@
   opencode,
   enableCloudflared ? true,
   cloudflared,
+  desktop-file-utils,
+  xdg-utils,
   enableResourceMonitor ? true,
   t3code-unwrapped ? callPackage ./unwrapped.nix { },
   t3code-resource-monitor ? callPackage ./resource-monitor.nix { inherit t3code-unwrapped; },
@@ -80,6 +82,21 @@ let
       "${placeholder "out"}/bin/t3code-desktop"
     ];
 
+  # Electron shells out to these to register the t3code:// scheme handler
+  # (xdg-mime) and refresh the desktop database (update-desktop-database).
+  # Only the desktop launcher needs them.
+  desktopRuntimePackages = lib.optionals stdenv.hostPlatform.isLinux [
+    desktop-file-utils
+    xdg-utils
+  ];
+
+  desktopWrapperArgs = lib.optionals (desktopRuntimePackages != [ ]) [
+    "--prefix"
+    "PATH"
+    ":"
+    (lib.makeBinPath desktopRuntimePackages)
+  ];
+
 in
 symlinkJoin {
   pname = "t3code-nightly";
@@ -93,7 +110,11 @@ symlinkJoin {
 
   postBuild = lib.optionalString (wrapperArgs != [ ]) ''
     for program in "$out/bin"/*; do
-      wrapProgram "$program" ${lib.escapeShellArgs wrapperArgs}
+      extraArgs=()
+      if [ "$(basename "$program")" = t3code-desktop ]; then
+        extraArgs+=(${lib.escapeShellArgs desktopWrapperArgs})
+      fi
+      wrapProgram "$program" ${lib.escapeShellArgs wrapperArgs} "''${extraArgs[@]}"
     done
   '';
 
