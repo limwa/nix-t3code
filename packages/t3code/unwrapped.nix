@@ -137,6 +137,10 @@ stdenv.mkDerivation (
       # Exclude the `@t3tools/monorepo` workspace from the pending rebuild since
       # `vp config` needs git
       pnpm rebuild --pending "''${pnpmInstallFlags[@]}" --filter '!@t3tools/monorepo'
+
+      # Enable T3 Connect like official release builds. The example file only
+      # holds public identifiers, and the build reads `.env` to bake them in.
+      cp .env.example .env
     '';
 
     pnpmBuildScript = "build:desktop";
