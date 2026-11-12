@@ -36,11 +36,23 @@
   desktop-file-utils,
   xdg-utils,
   enableResourceMonitor ? true,
+  enableHeadlessShell ? stdenv.hostPlatform.isLinux,
+  playwright-driver,
   t3code-unwrapped ? callPackage ./unwrapped.nix { },
   t3code-resource-monitor ? callPackage ./resource-monitor.nix { inherit t3code-unwrapped; },
 }:
 
 let
+  # Upstream downloads a generic Chrome-for-Testing binary on first use, which
+  # cannot run on NixOS. The server reads T3CODE_BROWSER_EXECUTABLE_PATH (see
+  # patches/browser-executable-path.patch) and skips the download when it is set.
+  headlessShellDir =
+    if stdenv.hostPlatform.isAarch64 then
+      "chrome-headless-shell-linux-arm64"
+    else
+      "chrome-headless-shell-linux64";
+  headlessShell = "${playwright-driver.components.chromium-headless-shell}/${headlessShellDir}/chrome-headless-shell";
+
   runtimePackages =
     lib.optionals enableAzureDevOps [
       (azure-cli.withExtensions [ azure-cli-extensions.azure-devops ])
@@ -72,6 +84,11 @@ let
       "--set-default"
       "T3CODE_RESOURCE_MONITOR_PATH"
       (lib.getExe t3code-resource-monitor)
+    ]
+    ++ lib.optionals enableHeadlessShell [
+      "--set-default"
+      "T3CODE_BROWSER_EXECUTABLE_PATH"
+      headlessShell
     ]
     # t3code:// links should go through this wrapper and its PATH additions
     # rather than the unwrapped launcher. This takes priority over the

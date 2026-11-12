@@ -57,7 +57,10 @@ stdenv.mkDerivation (
       hash = "sha256-f4G17ELvY3hnEbPViMrOwZLi3xN8W0PpEVAXSsMg9go=";
     };
 
-    patches = [ ./patches/desktop-resources-path.patch ];
+    patches = [
+      ./patches/browser-executable-path.patch
+      ./patches/desktop-resources-path.patch
+    ];
 
     postPatch = ''
       substituteInPlace apps/web/vite.config.ts \
