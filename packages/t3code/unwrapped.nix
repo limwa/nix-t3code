@@ -24,7 +24,7 @@
   writeDarwinBundle,
   xcbuild,
   fetchPnpmDeps,
-  pnpm_11,
+  pnpm_12,
   pnpmConfigHook,
   pnpmBuildHook,
   cacert,
@@ -35,7 +35,7 @@ stdenv.mkDerivation (
   let
     appName = "T3 Code (Alpha)";
     electron = electron_44;
-    pnpm = pnpm_11;
+    pnpm = pnpm_12;
     desktopIcon =
       if stdenv.hostPlatform.isDarwin then
         "assets/prod/black-macos-1024.png"
@@ -124,11 +124,11 @@ stdenv.mkDerivation (
         ;
 
       fetcherVersion = 4;
-      hash = "sha256-lZv88yvoDuGlcApHktsbR1OiTtffzQ92wu9qYbFxR8s=";
+      hash = "sha256-LlriCjCtumLN6PhMaWkymInYSb0oP6R3QdJ9u5ExeIA=";
     };
 
     preBuild = ''
-      # pnpm 11 otherwise detects the package version updates below as
+      # pnpm otherwise detects the package version updates below as
       # dependency drift and runs another install, including lifecycle scripts.
       export pnpm_config_verify_deps_before_run=false
 
