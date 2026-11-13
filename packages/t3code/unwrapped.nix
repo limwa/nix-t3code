@@ -123,8 +123,8 @@ stdenv.mkDerivation (
         prePnpmInstall
         ;
 
-      fetcherVersion = 4;
-      hash = "sha256-LlriCjCtumLN6PhMaWkymInYSb0oP6R3QdJ9u5ExeIA=";
+      fetcherVersion = 5;
+      hash = "sha256-jEObkvNgRld2hYkL7FKRHDd+fXvUMniJEawcODT6qPo=";
     };
 
     preBuild = ''
