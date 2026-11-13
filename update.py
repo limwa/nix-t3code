@@ -1,5 +1,10 @@
 #!/usr/bin/env nix-shell
-#! nix-shell -p python3 nix-update nix -i python3
+#! nix-shell -p python3 nixVersions.nix_2_34 "nix-update.override { nix = nixVersions.nix_2_34; }" -i python3
+
+# Pinned to Nix 2.34: on 2.35, `nix flake metadata` reports a store path that
+# does not exist for a dirty tree, which breaks nix-update's flake support
+# (https://github.com/Mic92/nix-update/issues/687). nix-update's wrapper puts
+# its own `nix` first on PATH, so it has to be overridden too.
 
 from abc import ABC, abstractmethod
 import argparse
