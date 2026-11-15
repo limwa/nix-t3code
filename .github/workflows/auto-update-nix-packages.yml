@@ -39,6 +39,10 @@ jobs:
       - name: Run package updates
         shell: bash
         run: ./update.py
+        env:
+          # nix-update queries the GitHub API; authenticate to avoid the
+          # unauthenticated rate limit.
+          GITHUB_TOKEN: ${{ github.token }}
 
       - name: Push successful update commits
         if: always()
