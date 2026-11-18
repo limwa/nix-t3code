@@ -45,7 +45,7 @@ stdenv.mkDerivation (
   in
   {
     pname = "t3code-nightly-unwrapped";
-    version = "0.1.11-nightly.20261117.4838";
+    version = "0.1.11-nightly.20261117.4851";
 
     strictDeps = true;
     __structuredAttrs = true;
@@ -54,7 +54,7 @@ stdenv.mkDerivation (
       owner = "pingdotgg";
       repo = "t3code";
       tag = "v${finalAttrs.version}";
-      hash = "sha256-4ZjK1Nnj6W5BzBa97qM5i+mIfdIDIs69HbIk/nlhP8Y=";
+      hash = "sha256-BU7eCNa2isO8lLFUm+ghlNZJwRXKicFxTtBQqjdfE90=";
     };
 
     patches = [
@@ -124,7 +124,7 @@ stdenv.mkDerivation (
         ;
 
       fetcherVersion = 5;
-      hash = "sha256-27Ljt2lY4J1Fi3ddVIflPQ5erRqmgaZ8+YBH9fhCLzo=";
+      hash = "sha256-s/vm8Ox4o/AYpNC/amYP1KFWwh7SY5bCmVBuIJn9f/c=";
     };
 
     preBuild = ''
