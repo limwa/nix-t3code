@@ -3,6 +3,7 @@
 # DIFF: COMMIT=1be7652e6e96aff0192d84259f96927df2259675; SYNC="$(gh api repos/NixOS/nixpkgs/commits/master --jq '.sha')"; echo $SYNC; delta <(curl -fsSL "https://raw.githubusercontent.com/NixOS/nixpkgs/$COMMIT/pkgs/by-name/t3/t3code/unwrapped.nix") <(curl -fsSL "https://raw.githubusercontent.com/NixOS/nixpkgs/$SYNC/pkgs/by-name/t3/t3code/unwrapped.nix")
 # END nix-t3code meta
 {
+  callPackage,
   cctools,
   copyDesktopItems,
   electron_44,
@@ -277,10 +278,18 @@ stdenv.mkDerivation (
     ];
 
     passthru = {
+      # The native resource monitor is built from the same source tree, so its
+      # cargoHash has to be refreshed whenever the version changes.
+      resourceMonitor = callPackage ./resource-monitor.nix {
+        t3code-unwrapped = finalAttrs.finalPackage;
+      };
+
       updateScript = nix-update-script {
         attrPath = "t3code-nightly.unwrapped";
         extraArgs = [
           "--flake"
+          "--subpackage"
+          "resourceMonitor"
           "--use-github-releases"
           "--version=unstable"
           "--version-regex=v(\\d+\\.\\d+\\.\\d+-nightly\\.\\d+\\.\\d+)"

@@ -39,7 +39,7 @@
   enableHeadlessShell ? stdenv.hostPlatform.isLinux,
   playwright-driver,
   t3code-unwrapped ? callPackage ./unwrapped.nix { },
-  t3code-resource-monitor ? callPackage ./resource-monitor.nix { inherit t3code-unwrapped; },
+  t3code-resource-monitor ? t3code-unwrapped.resourceMonitor,
 }:
 
 let
@@ -135,11 +135,10 @@ symlinkJoin {
     done
   '';
 
-  passthru = {
+  passthru = t3code-unwrapped.passthru // {
     unwrapped = t3code-unwrapped;
     resourceMonitor = t3code-resource-monitor;
-  }
-  // t3code-unwrapped.passthru;
+  };
 
   meta = {
     # Manually inherit so that pos works
