@@ -13,7 +13,7 @@ rustPlatform.buildRustPackage {
 
   sourceRoot = "${t3code-unwrapped.src.name}/native/resource-monitor";
 
-  cargoHash = "sha256-deTy3FFcOwhxZnEbWDXFGVFFoKUex434ADJQtchVzbs=";
+  cargoHash = "sha256-QartZALjE2BxgfKcV3CJjtG6oSNE/Vcbz2ESx1UrRbk=";
 
   meta = {
     description = "Native resource diagnostics sidecar for T3 Code";
